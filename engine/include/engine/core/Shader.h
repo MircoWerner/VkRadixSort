@@ -174,12 +174,18 @@ namespace engine {
             return &m_uniforms;
         }
 
+        [[nodiscard]] VkExtent3D getWorkGroupSize() const {
+            return m_workGroupSize;
+        }
+
     private:
         GPUContext *m_gpuContext;
         VkShaderModule m_shaderModule;
 
         std::map<uint32_t, DescriptorSetLayoutData> m_descriptorSetLayoutData;
         std::map<uint32_t, std::vector<std::shared_ptr<Uniform>>> m_uniforms;
+
+        VkExtent3D m_workGroupSize = {0, 0, 0};
 
         static VkShaderModule createShaderModule(const std::vector<char> &code, VkDevice device) {
             VkShaderModuleCreateInfo createInfo{};
@@ -212,7 +218,7 @@ namespace engine {
             std::filesystem::create_directories(outputPath);
 
             std::stringstream cmd;
-            cmd << "glslc --target-spv=spv1.6 " << inputPath << "/" << fileName << " -o " << outputPath << "/" << fileName << ".spv";
+            cmd << "glslc --target-spv=spv1.5 " << inputPath << "/" << fileName << " -o " << outputPath << "/" << fileName << ".spv";
 
             std::string cmd_output;
             char read_buffer[1024];
@@ -233,6 +239,7 @@ namespace engine {
             assert(result == SPV_REFLECT_RESULT_SUCCESS);
 
             reflectDescriptorSetLayout(module);
+            reflectWorkGroupSize(module);
 
             spvReflectDestroyShaderModule(&module);
         }
@@ -253,11 +260,11 @@ namespace engine {
                 DescriptorSetLayoutData &layout = m_descriptorSetLayoutData[reflectedSet->set];
 
                 layout.bindings.resize(reflectedSet->binding_count);
-                for (uint32_t i_binding = 0; i_binding < reflectedSet->binding_count;++i_binding) {
+                for (uint32_t i_binding = 0; i_binding < reflectedSet->binding_count; ++i_binding) {
                     const SpvReflectDescriptorBinding &refl_binding = *(reflectedSet->bindings[i_binding]);
                     VkDescriptorSetLayoutBinding &layout_binding = layout.bindings[i_binding];
                     layout_binding.binding = refl_binding.binding;
-                    layout_binding.descriptorType =static_cast<VkDescriptorType>(refl_binding.descriptor_type);
+                    layout_binding.descriptorType = static_cast<VkDescriptorType>(refl_binding.descriptor_type);
                     layout_binding.descriptorCount = 1;
                     for (uint32_t i_dim = 0; i_dim < refl_binding.array.dims_count; ++i_dim) {
                         layout_binding.descriptorCount *= refl_binding.array.dims[i_dim];
@@ -273,6 +280,13 @@ namespace engine {
                 layout.create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
                 layout.create_info.bindingCount = reflectedSet->binding_count;
                 layout.create_info.pBindings = layout.bindings.data();
+            }
+        }
+
+        void reflectWorkGroupSize(const SpvReflectShaderModule &module) {
+            auto entryPoint = spvReflectGetEntryPoint(&module, "main");
+            if (entryPoint != nullptr) {
+                m_workGroupSize = {entryPoint->local_size.x, entryPoint->local_size.y, entryPoint->local_size.z};
             }
         }
     };

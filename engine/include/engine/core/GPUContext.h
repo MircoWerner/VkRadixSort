@@ -68,6 +68,10 @@ namespace engine {
             vkFreeCommandBuffers(m_device, m_commandPool, 1, &commandBuffer);
         }
 
+        void incrementActiveIndex() {
+            m_activeIndex = (m_activeIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+        }
+
     protected:
         VkInstance m_instance{};
         VkDebugUtilsMessengerEXT m_debugMessenger{};
@@ -75,10 +79,6 @@ namespace engine {
         std::vector<VkCommandBuffer> m_commandBuffers; // destroyed implicitly with the command pool
 
         virtual std::vector<const char *> getDeviceExtensions();
-
-        void incrementActiveIndex() {
-            m_activeIndex = (m_activeIndex + 1) % MAX_FRAMES_IN_FLIGHT;
-        }
 
     private:
 #ifdef NDEBUG

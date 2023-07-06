@@ -3,6 +3,7 @@
 #include "engine/core/Buffer.h"
 #include "engine/core/GPUContext.h"
 #include "engine/core/Shader.h"
+
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
@@ -23,7 +24,7 @@ namespace engine {
             createDescriptorPool();
             createDescriptorSets();
             createPipelineLayout();
-            createPipeline();
+            createPipelines();
             createSyncObjects();
 
             createUniforms();
@@ -37,7 +38,9 @@ namespace engine {
             for (auto &descriptorSetLayout: m_descriptorSetLayouts) {
                 vkDestroyDescriptorSetLayout(m_gpuContext->m_device, descriptorSetLayout, nullptr);
             }
-            vkDestroyPipeline(m_gpuContext->m_device, m_pipeline, nullptr);
+            for (auto &pipeline : m_pipelines) {
+                vkDestroyPipeline(m_gpuContext->m_device, pipeline, nullptr);
+            }
             vkDestroyPipelineLayout(m_gpuContext->m_device, m_pipelineLayout, nullptr);
             vkDestroyCommandPool(m_gpuContext->m_device, m_commandPool, nullptr);
             for (auto &shader: m_shaders) {
@@ -80,7 +83,7 @@ namespace engine {
         GPUContext *m_gpuContext;
 
         VkPipelineLayout m_pipelineLayout{};
-        VkPipeline m_pipeline{};
+        std::vector<VkPipeline> m_pipelines{};
 
         VkCommandPool m_commandPool{};
         std::vector<VkCommandBuffer> m_commandBuffers; // destroyed implicitly with the command pool
@@ -103,7 +106,7 @@ namespace engine {
 
         virtual uint32_t findQueueFamilyIndex() = 0;
 
-        virtual void createPipeline() = 0;
+        virtual void createPipelines() = 0;
 
         virtual std::vector<std::shared_ptr<Shader>> createShaders() = 0;
 
@@ -327,4 +330,4 @@ semaphoreInfo.flags = 0;
             }
         }
     };
-} // namespace engine
+} // namespace raven
