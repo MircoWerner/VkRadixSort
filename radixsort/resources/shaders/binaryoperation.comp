@@ -1,0 +1,29 @@
+#version 460
+#extension GL_GOOGLE_include_directive: enable
+
+layout (local_size_x = 256) in;
+
+layout (std140, set = 0, binding = 0) uniform options_compute {
+    uint g_elements;
+};
+
+layout (set = 0, binding = 1) buffer inputBuf1 {
+    uint v1[];
+};
+
+layout (set = 0, binding = 2) buffer inputBuf2 {
+    uint v2[];
+};
+
+layout (set = 0, binding = 3) buffer outputBuf {
+    uint v3[];
+};
+
+void main() {
+    uint gID = gl_GlobalInvocationID.x;
+    if (gID >= g_elements) {
+        return;
+    }
+
+    v3[gID] = v1[gID] + v2[gID];
+}
