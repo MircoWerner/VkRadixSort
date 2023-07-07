@@ -200,13 +200,6 @@ namespace engine {
 
         std::vector<const char *> deviceExtensions = getDeviceExtensions();
 
-        //        VkPhysicalDeviceFeatures deviceFeatures{}; // required features
-        //        deviceFeatures.samplerAnisotropy = VK_TRUE;
-
-        //        VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
-        //        VkPhysicalDeviceAccelerationStructureFeaturesKHR accelFeature{.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR, .pNext=reinterpret_cast<void*>(&rtPipelineFeature)};
-        //        VkPhysicalDeviceBufferDeviceAddressFeatures addressFeature{.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES, .pNext=reinterpret_cast<void*>(&accelFeature)};
-
         VkPhysicalDeviceFeatures2 features2{
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
         VkPhysicalDeviceVulkan13Features features13{

@@ -1,4 +1,4 @@
-#include "RadixSort.h"
+#include "SingleRadixSort.h"
 #include "engine/core/GPUContext.h"
 #include "engine/util/Paths.h"
 
@@ -13,7 +13,7 @@ int main() {
     try {
         gpu.init();
 
-        auto app = std::make_shared<engine::RadixSort>();
+        auto app = std::make_shared<engine::MultiRadixSort>();
         app->execute(&gpu);
 
         gpu.shutdown();

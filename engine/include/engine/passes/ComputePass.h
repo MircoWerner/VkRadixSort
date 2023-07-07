@@ -35,11 +35,9 @@ namespace engine {
             vkResetCommandBuffer(m_commandBuffers[m_gpuContext->getActiveIndex()], 0);
             fillCommandBuffer(m_commandBuffers[m_gpuContext->getActiveIndex()]);
 
-            //            updateUniformBuffer(m_gpuContext->getActiveIndex());
-
             VkSubmitInfo submitInfo{};
             submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            if (awaitBeforeExecution) {
+            if (awaitBeforeExecution != VK_NULL_HANDLE) {
                 VkSemaphore waitSemaphores[] = {awaitBeforeExecution}; // wait on dependent operation
                 VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
                 submitInfo.waitSemaphoreCount = 1;
@@ -48,9 +46,8 @@ namespace engine {
             }
             submitInfo.commandBufferCount = 1;
             submitInfo.pCommandBuffers = &m_commandBuffers[m_gpuContext->getActiveIndex()];
-            VkSemaphore signalSemaphores[] = {m_signalSemaphores[m_gpuContext->getActiveIndex()]}; // is signaled when the command buffer has finished execution
             submitInfo.signalSemaphoreCount = 1;
-            submitInfo.pSignalSemaphores = signalSemaphores;
+            submitInfo.pSignalSemaphores = &m_signalSemaphores[m_gpuContext->getActiveIndex()]; // is signaled when the command buffer has finished execution
 
             if (vkQueueSubmit(m_gpuContext->m_queues->getQueue(Queues::COMPUTE), 1, &submitInfo, m_fences[m_gpuContext->getActiveIndex()]) != VK_SUCCESS) { // signal fence after the command buffer finished execution
                 throw std::runtime_error("Failed to submit compute command buffer!");

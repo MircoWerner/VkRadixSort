@@ -4,9 +4,9 @@
 #include "engine/passes/ComputePass.h"
 
 namespace engine {
-    class RadixSortPass : public ComputePass {
+    class MultiRadixSortPass : public ComputePass {
     public:
-        explicit RadixSortPass(GPUContext *gpuContext) : ComputePass(gpuContext) {
+        explicit MultiRadixSortPass(GPUContext *gpuContext) : ComputePass(gpuContext) {
         }
 
         enum ComputeStage {
@@ -16,8 +16,8 @@ namespace engine {
 
     protected:
         std::vector<std::shared_ptr<Shader>> createShaders() override {
-            return {std::make_shared<Shader>(m_gpuContext, Paths::m_resourceDirectoryPath + "/shaders", "radixsort_histograms.comp"),
-                    std::make_shared<Shader>(m_gpuContext, Paths::m_resourceDirectoryPath + "/shaders", "radixsort.comp")};
+            return {std::make_shared<Shader>(m_gpuContext, Paths::m_resourceDirectoryPath + "/shaders", "multi_radixsort_histograms.comp"),
+                    std::make_shared<Shader>(m_gpuContext, Paths::m_resourceDirectoryPath + "/shaders", "multi_radixsort.comp")};
         }
 
         void recordCommands(VkCommandBuffer commandBuffer) override {

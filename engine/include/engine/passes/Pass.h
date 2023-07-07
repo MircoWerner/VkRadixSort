@@ -75,6 +75,31 @@ namespace engine {
             }
         }
 
+        void setStorageBuffer(uint32_t multiBufferedIndex, uint32_t set, uint32_t binding, Buffer *buffer) {
+            uint32_t setIdx = m_descriptorSetToIndex[set];
+
+            Shader::DescriptorSetLayoutData &layout = m_descriptorSetLayoutData[setIdx];
+            const auto &bindingLayout = layout.bindings[layout.bindingToIndex[binding]];
+            assert(set == layout.set_number);
+            assert(binding == bindingLayout.binding);
+
+            VkDescriptorBufferInfo bufferInfo{};
+            bufferInfo.buffer = buffer->getBuffer();
+            bufferInfo.offset = 0;
+            bufferInfo.range = buffer->getSizeBytes();
+
+            VkWriteDescriptorSet writeDescriptorSet{};
+            writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptorSet.dstBinding = binding;
+            writeDescriptorSet.dstArrayElement = 0;
+            writeDescriptorSet.descriptorType = bindingLayout.descriptorType;
+            writeDescriptorSet.descriptorCount = 1;
+            writeDescriptorSet.pBufferInfo = &bufferInfo;
+
+            writeDescriptorSet.dstSet = m_descriptorSets[multiBufferedIndex][setIdx];
+            vkUpdateDescriptorSets(m_gpuContext->m_device, 1, &writeDescriptorSet, 0, nullptr);
+        }
+
         std::shared_ptr<Uniform> getUniform(uint32_t set, uint32_t binding) {
             return m_uniforms[set][binding];
         }
