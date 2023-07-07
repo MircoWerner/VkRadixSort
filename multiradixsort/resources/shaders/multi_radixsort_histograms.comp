@@ -8,16 +8,16 @@
 
 layout (local_size_x = WORKGROUP_SIZE) in;
 
-layout (std140, set = 0, binding = 0) uniform options_radix_sort_histograms {
+layout (push_constant, std430) uniform PushConstants {
     uint g_num_elements;
     uint g_shift;
 };
 
-layout (std430, set = 0, binding = 1) buffer elements_in {
+layout (std430, set = 0, binding = 0) buffer elements_in {
     uint g_elements_in[];
 };
 
-layout (std430, set = 0, binding = 3) buffer histograms {
+layout (std430, set = 0, binding = 1) buffer histograms {
     // [histogram_of_workgroup_0 | histogram_of_workgroup_1 | ... ]
     uint g_histograms[]; // |g_histograms| = RADIX_SORT_BINS * #WORKGROUPS
 };

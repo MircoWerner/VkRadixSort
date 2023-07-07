@@ -22,6 +22,7 @@ namespace engine {
 
             // buffers
             prepareBuffers();
+            std::cout << PRINT_PREFIX << "Sorting " << NUM_ELEMENTS << " " << (sizeof(m_elementsIn[0]) * 8) << "bit numbers." << std::endl;
 
             // set storage buffers
             m_pass->setStorageBuffer(SingleRadixSortPass::RADIX_SORT, 0, m_buffers[INPUT_BUFFER_INDEX].get());

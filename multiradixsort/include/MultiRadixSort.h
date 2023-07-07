@@ -18,43 +18,39 @@ namespace engine {
             m_pass->setGlobalInvocationSize(MultiRadixSortPass::RADIX_SORT_HISTOGRAMS, NUM_ELEMENTS, 1, 1);
             m_pass->setGlobalInvocationSize(MultiRadixSortPass::RADIX_SORT, NUM_ELEMENTS, 1, 1);
 
-            // uniforms
+            // push constants
             const uint NUM_WORKGROUPS = m_pass->getWorkGroupCount(MultiRadixSortPass::RADIX_SORT_HISTOGRAMS).width;
             assert(NUM_WORKGROUPS == m_pass->getWorkGroupCount(MultiRadixSortPass::RADIX_SORT).width);
-            m_uniformConstantsRadixSortHistograms = m_pass->getUniform(MultiRadixSortPass::RADIX_SORT_HISTOGRAMS, 0);
-            m_uniformConstantsRadixSortHistograms->setVariable<uint>("g_num_elements", NUM_ELEMENTS);
-            m_uniformConstantsRadixSort = m_pass->getUniform(MultiRadixSortPass::RADIX_SORT, 0);
-            m_uniformConstantsRadixSort->setVariable<uint>("g_num_elements", NUM_ELEMENTS);
-            m_uniformConstantsRadixSort->setVariable<uint>("g_num_workgroups", NUM_WORKGROUPS);
+            m_pass->m_pushConstantsHistogram.g_num_elements = NUM_ELEMENTS;
+            m_pass->m_pushConstants.g_num_elements = NUM_ELEMENTS;
+            m_pass->m_pushConstants.g_num_workgroups = NUM_WORKGROUPS;
 
             // buffers
             prepareBuffers();
+            std::cout << PRINT_PREFIX << "Sorting " << NUM_ELEMENTS << " " << (sizeof(m_elementsIn[0]) * 8) << "bit numbers." << std::endl;
 
             // set storage buffers
             uint32_t activeIndex = m_gpuContext->getActiveIndex();
 
-            m_pass->setStorageBuffer(activeIndex, MultiRadixSortPass::RADIX_SORT_HISTOGRAMS, 1, m_buffers[0].get());
-            m_pass->setStorageBuffer((activeIndex + 1) % 2, MultiRadixSortPass::RADIX_SORT_HISTOGRAMS, 1, m_buffers[1].get());
+            m_pass->setStorageBuffer(activeIndex, MultiRadixSortPass::RADIX_SORT_HISTOGRAMS, 0, m_buffers[0].get());
+            m_pass->setStorageBuffer((activeIndex + 1) % 2, MultiRadixSortPass::RADIX_SORT_HISTOGRAMS, 0, m_buffers[1].get());
 
-            m_pass->setStorageBuffer(activeIndex, MultiRadixSortPass::RADIX_SORT, 1, m_buffers[0].get());
-            m_pass->setStorageBuffer((activeIndex + 1) % 2, MultiRadixSortPass::RADIX_SORT, 1, m_buffers[1].get());
-            m_pass->setStorageBuffer(activeIndex, MultiRadixSortPass::RADIX_SORT, 2, m_buffers[1].get());
-            m_pass->setStorageBuffer((activeIndex + 1) % 2, MultiRadixSortPass::RADIX_SORT, 2, m_buffers[0].get());
+            m_pass->setStorageBuffer(activeIndex, MultiRadixSortPass::RADIX_SORT, 0, m_buffers[0].get());
+            m_pass->setStorageBuffer((activeIndex + 1) % 2, MultiRadixSortPass::RADIX_SORT, 0, m_buffers[1].get());
+            m_pass->setStorageBuffer(activeIndex, MultiRadixSortPass::RADIX_SORT, 1, m_buffers[1].get());
+            m_pass->setStorageBuffer((activeIndex + 1) % 2, MultiRadixSortPass::RADIX_SORT, 1, m_buffers[0].get());
 
-            m_pass->setStorageBuffer(MultiRadixSortPass::RADIX_SORT_HISTOGRAMS, 3, m_buffers[2].get());
-            m_pass->setStorageBuffer(MultiRadixSortPass::RADIX_SORT, 3, m_buffers[2].get());
+            m_pass->setStorageBuffer(MultiRadixSortPass::RADIX_SORT_HISTOGRAMS, 1, m_buffers[2].get());
+            m_pass->setStorageBuffer(MultiRadixSortPass::RADIX_SORT, 2, m_buffers[2].get());
 
             // execute pass
             std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
             VkSemaphore awaitBeforeExecution = VK_NULL_HANDLE;
             const uint32_t NUM_ITERATIONS = 4;
             for (uint32_t i = 0; i < NUM_ITERATIONS; i++) {
-                m_uniformConstantsRadixSortHistograms->setVariable<uint>("g_shift", 8 * i); // TODO: use push constants instead
-                m_uniformConstantsRadixSortHistograms->upload(m_gpuContext->getActiveIndex());
-                m_uniformConstantsRadixSort->setVariable<uint>("g_shift", 8 * i);
-                m_uniformConstantsRadixSort->upload(m_gpuContext->getActiveIndex());
+                m_pass->m_pushConstantsHistogram.g_shift = 8 * i;
+                m_pass->m_pushConstants.g_shift = 8 * i;
                 awaitBeforeExecution = m_pass->execute(awaitBeforeExecution);
-//                vkQueueWaitIdle(m_gpuContext->m_queues->getQueue(Queues::COMPUTE));
                 m_gpuContext->incrementActiveIndex();
             }
             vkQueueWaitIdle(m_gpuContext->m_queues->getQueue(Queues::COMPUTE));
@@ -78,9 +74,6 @@ namespace engine {
         GPUContext *m_gpuContext;
 
         std::shared_ptr<MultiRadixSortPass> m_pass;
-
-        std::shared_ptr<Uniform> m_uniformConstantsRadixSortHistograms;
-        std::shared_ptr<Uniform> m_uniformConstantsRadixSort;
 
         const uint32_t RADIX_SORT_BINS = 256;
         const uint32_t NUM_ELEMENTS = 1000000;
@@ -156,12 +149,12 @@ namespace engine {
         static bool testSort(std::vector<uint32_t> &reference, std::vector<uint32_t> &outBuffer) {
             if (reference.size() != outBuffer.size()) {
                 std::cerr << PRINT_PREFIX << "reference.size() != outBuffer.size()" << std::endl;
-                return false;
+                throw std::runtime_error("TEST FAILED.");
             }
             for (uint32_t i = 0; i < reference.size(); i++) {
                 if (reference[i] != outBuffer[i]) {
                     std::cerr << PRINT_PREFIX << reference[i] << " = reference[" << i << "] != outBuffer[" << i << "] = " << outBuffer[i] << std::endl;
-                    return false;
+                    throw std::runtime_error("TEST FAILED.");
                 }
             }
             std::cout << PRINT_PREFIX << "Test passed." << std::endl;

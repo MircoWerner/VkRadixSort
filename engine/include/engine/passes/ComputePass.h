@@ -66,12 +66,13 @@ namespace engine {
         }
 
         void createPipelines() override {
-            for (const auto &shader : m_shaders) {
-                VkPipelineShaderStageCreateInfo shaderStage = shader->generateShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT); // TODO(Mirco): shaders
+            for (uint32_t stageIndex = 0; stageIndex < m_shaders.size(); stageIndex++) {
+                const auto &shader = m_shaders[stageIndex];
+                VkPipelineShaderStageCreateInfo shaderStage = shader->generateShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT);
 
                 VkComputePipelineCreateInfo pipelineInfo{};
                 pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-                pipelineInfo.layout = m_pipelineLayout;
+                pipelineInfo.layout = m_pipelineLayouts[stageIndex];
                 pipelineInfo.stage = shaderStage;
 
                 m_pipelines.emplace_back();
@@ -90,7 +91,7 @@ namespace engine {
 
             std::vector<VkDescriptorSet> descriptorSets;
             getDescriptorSets(descriptorSets);
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipelineLayout, 0, descriptorSets.size(), descriptorSets.data(), 0, nullptr);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipelineLayouts[stageIndex], 0, descriptorSets.size(), descriptorSets.data(), 0, nullptr);
 
             vkCmdDispatch(commandBuffer, m_workGroupCounts[stageIndex].width, m_workGroupCounts[stageIndex].height, m_workGroupCounts[stageIndex].depth);
         }

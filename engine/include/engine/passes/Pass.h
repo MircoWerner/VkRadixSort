@@ -23,7 +23,8 @@ namespace engine {
             createDescriptorSetLayout();
             createDescriptorPool();
             createDescriptorSets();
-            createPipelineLayout();
+            m_pipelineLayouts.resize(m_shaders.size());
+            createPipelineLayouts();
             createPipelines();
             createSyncObjects();
 
@@ -41,7 +42,9 @@ namespace engine {
             for (auto &pipeline: m_pipelines) {
                 vkDestroyPipeline(m_gpuContext->m_device, pipeline, nullptr);
             }
-            vkDestroyPipelineLayout(m_gpuContext->m_device, m_pipelineLayout, nullptr);
+            for (auto &pipelineLayout : m_pipelineLayouts) {
+                vkDestroyPipelineLayout(m_gpuContext->m_device, pipelineLayout, nullptr);
+            }
             vkDestroyCommandPool(m_gpuContext->m_device, m_commandPool, nullptr);
             for (auto &shader: m_shaders) {
                 shader->release();
@@ -107,7 +110,7 @@ namespace engine {
     protected:
         GPUContext *m_gpuContext;
 
-        VkPipelineLayout m_pipelineLayout{};
+        std::vector<VkPipelineLayout> m_pipelineLayouts{};
         std::vector<VkPipeline> m_pipelines{};
 
         VkCommandPool m_commandPool{};
@@ -133,11 +136,22 @@ namespace engine {
 
         virtual void createPipelines() = 0;
 
-        virtual std::vector<std::shared_ptr<Shader>> createShaders() = 0;
+        virtual void createPipelineLayouts() {
+            VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+            pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            pipelineLayoutInfo.setLayoutCount = m_descriptorSetLayouts.size();
+            pipelineLayoutInfo.pSetLayouts = m_descriptorSetLayouts.data();
+            pipelineLayoutInfo.pushConstantRangeCount = 0;
+            pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-        virtual bool createPushConstantRange(VkPushConstantRange *pushConstantRange) {
-            return false;
+            for (uint32_t stageIndex = 0; stageIndex < m_shaders.size(); stageIndex++) {
+                if (vkCreatePipelineLayout(m_gpuContext->m_device, &pipelineLayoutInfo, nullptr, &m_pipelineLayouts[stageIndex]) != VK_SUCCESS) {
+                    throw std::runtime_error("Failed to create pipeline layout!");
+                }
+            }
         };
+
+        virtual std::vector<std::shared_ptr<Shader>> createShaders() = 0;
 
         void getDescriptorSets(std::vector<VkDescriptorSet> &sets) {
             sets.resize(m_descriptorSets[m_gpuContext->getActiveIndex()].size());
@@ -171,26 +185,6 @@ namespace engine {
                 throw std::runtime_error("Failed to allocate command buffers!");
             }
         }
-
-        void createPipelineLayout() {
-            VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-            pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-            pipelineLayoutInfo.setLayoutCount = m_descriptorSetLayouts.size();
-            pipelineLayoutInfo.pSetLayouts = m_descriptorSetLayouts.data();
-
-            VkPushConstantRange pushConstantRange{};
-            if (createPushConstantRange(&pushConstantRange)) {
-                pipelineLayoutInfo.pushConstantRangeCount = 1;
-                pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-            } else {
-                pipelineLayoutInfo.pushConstantRangeCount = 0;
-                pipelineLayoutInfo.pPushConstantRanges = nullptr;
-            }
-
-            if (vkCreatePipelineLayout(m_gpuContext->m_device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS) {
-                throw std::runtime_error("Failed to create pipeline layout!");
-            }
-        };
 
         void createDescriptorSetLayout() {
             // retrieve information using SPIRV-reflect
