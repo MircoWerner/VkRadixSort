@@ -54,6 +54,7 @@ namespace engine {
                 m_uniformConstantsRadixSort->setVariable<uint>("g_shift", 8 * i);
                 m_uniformConstantsRadixSort->upload(m_gpuContext->getActiveIndex());
                 awaitBeforeExecution = m_pass->execute(awaitBeforeExecution);
+//                vkQueueWaitIdle(m_gpuContext->m_queues->getQueue(Queues::COMPUTE));
                 m_gpuContext->incrementActiveIndex();
             }
             vkQueueWaitIdle(m_gpuContext->m_queues->getQueue(Queues::COMPUTE));

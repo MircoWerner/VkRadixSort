@@ -38,10 +38,9 @@ namespace engine {
             VkSubmitInfo submitInfo{};
             submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
             if (awaitBeforeExecution != VK_NULL_HANDLE) {
-                VkSemaphore waitSemaphores[] = {awaitBeforeExecution}; // wait on dependent operation
-                VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+                VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT};
                 submitInfo.waitSemaphoreCount = 1;
-                submitInfo.pWaitSemaphores = waitSemaphores;
+                submitInfo.pWaitSemaphores = &awaitBeforeExecution; // wait on dependent operation
                 submitInfo.pWaitDstStageMask = waitStages;
             }
             submitInfo.commandBufferCount = 1;

@@ -38,7 +38,7 @@ namespace engine {
             for (auto &descriptorSetLayout: m_descriptorSetLayouts) {
                 vkDestroyDescriptorSetLayout(m_gpuContext->m_device, descriptorSetLayout, nullptr);
             }
-            for (auto &pipeline : m_pipelines) {
+            for (auto &pipeline: m_pipelines) {
                 vkDestroyPipeline(m_gpuContext->m_device, pipeline, nullptr);
             }
             vkDestroyPipelineLayout(m_gpuContext->m_device, m_pipelineLayout, nullptr);
@@ -135,6 +135,10 @@ namespace engine {
 
         virtual std::vector<std::shared_ptr<Shader>> createShaders() = 0;
 
+        virtual bool createPushConstantRange(VkPushConstantRange *pushConstantRange) {
+            return false;
+        };
+
         void getDescriptorSets(std::vector<VkDescriptorSet> &sets) {
             sets.resize(m_descriptorSets[m_gpuContext->getActiveIndex()].size());
             for (uint32_t i = 0; i < m_descriptorSets[m_gpuContext->getActiveIndex()].size(); i++) {
@@ -171,10 +175,17 @@ namespace engine {
         void createPipelineLayout() {
             VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
             pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-            pipelineLayoutInfo.setLayoutCount = m_descriptorSetLayouts.size(); // optional
-            pipelineLayoutInfo.pSetLayouts = m_descriptorSetLayouts.data();    // optional
-            pipelineLayoutInfo.pushConstantRangeCount = 0;                     // optional
-            pipelineLayoutInfo.pPushConstantRanges = nullptr;                  // optional
+            pipelineLayoutInfo.setLayoutCount = m_descriptorSetLayouts.size();
+            pipelineLayoutInfo.pSetLayouts = m_descriptorSetLayouts.data();
+
+            VkPushConstantRange pushConstantRange{};
+            if (createPushConstantRange(&pushConstantRange)) {
+                pipelineLayoutInfo.pushConstantRangeCount = 1;
+                pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+            } else {
+                pipelineLayoutInfo.pushConstantRangeCount = 0;
+                pipelineLayoutInfo.pPushConstantRanges = nullptr;
+            }
 
             if (vkCreatePipelineLayout(m_gpuContext->m_device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS) {
                 throw std::runtime_error("Failed to create pipeline layout!");
@@ -355,4 +366,4 @@ semaphoreInfo.flags = 0;
             }
         }
     };
-} // namespace raven
+} // namespace engine

@@ -6,7 +6,7 @@
 #include <utility>
 
 namespace engine {
-    class MultiRadixSort {
+    class SingleRadixSort {
     public:
         void execute(GPUContext *gpuContext) {
             // gpu context
@@ -17,17 +17,15 @@ namespace engine {
             m_pass->create();
             m_pass->setGlobalInvocationSize(SingleRadixSortPass::RADIX_SORT, 1, 1, 1);
 
-            // uniforms
-            m_uniformConstantsRadixSort = m_pass->getUniform(SingleRadixSortPass::RADIX_SORT, 0);
-            m_uniformConstantsRadixSort->setVariable<uint>("g_num_elements", NUM_ELEMENTS);
-            m_uniformConstantsRadixSort->upload(m_gpuContext->getActiveIndex());
+            // push constants
+            m_pass->m_pushConstants.g_num_elements = NUM_ELEMENTS;
 
             // buffers
             prepareBuffers();
 
             // set storage buffers
-            m_pass->setStorageBuffer(SingleRadixSortPass::RADIX_SORT, 1, m_buffers[INPUT_BUFFER_INDEX].get());
-            m_pass->setStorageBuffer(SingleRadixSortPass::RADIX_SORT, 2, m_buffers[1 - INPUT_BUFFER_INDEX].get());
+            m_pass->setStorageBuffer(SingleRadixSortPass::RADIX_SORT, 0, m_buffers[INPUT_BUFFER_INDEX].get());
+            m_pass->setStorageBuffer(SingleRadixSortPass::RADIX_SORT, 1, m_buffers[1 - INPUT_BUFFER_INDEX].get());
 
             // execute pass
             std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
@@ -129,12 +127,12 @@ namespace engine {
         static bool testSort(std::vector<uint32_t> &reference, std::vector<uint32_t> &outBuffer) {
             if (reference.size() != outBuffer.size()) {
                 std::cerr << PRINT_PREFIX << "reference.size() != outBuffer.size()" << std::endl;
-                return false;
+                throw std::runtime_error("TEST FAILED.");
             }
             for (uint32_t i = 0; i < reference.size(); i++) {
                 if (reference[i] != outBuffer[i]) {
                     std::cerr << PRINT_PREFIX << reference[i] << " = reference[" << i << "] != outBuffer[" << i << "] = " << outBuffer[i] << std::endl;
-                    return false;
+                    throw std::runtime_error("TEST FAILED.");
                 }
             }
             std::cout << PRINT_PREFIX << "Test passed." << std::endl;

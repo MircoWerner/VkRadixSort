@@ -10,15 +10,15 @@
 
 layout (local_size_x = WORKGROUP_SIZE) in;
 
-layout (std140, set = 0, binding = 0) uniform options_radix_sort {
+layout (push_constant, std430) uniform PushConstants {
     uint g_num_elements;
 };
 
-layout (std430, set = 0, binding = 1) buffer elements_in {
+layout (std430, set = 0, binding = 0) buffer elements_in {
     uint g_elements_in[];
 };
 
-layout (std430, set = 0, binding = 2) buffer elements_out {
+layout (std430, set = 0, binding = 1) buffer elements_out {
     uint g_elements_out[];
 };
 
