@@ -21,47 +21,21 @@ namespace engine {
             auto uniform = std::make_shared<Uniform>(gpuContext);
 
             uniform->m_name = binding.type_description->type_name;
-            std::cout << uniform->m_name << std::endl;
             uniform->m_set = binding.set;
             uniform->m_binding = binding.binding;
 
             uniform->m_variables.resize(binding.type_description->member_count);
 
             for (uint32_t i = 0; i < binding.type_description->member_count; i++) {
-                //                const auto &member = binding.type_description->members[i];
                 const auto &memberBlock = binding.block.members[i];
 
                 auto &variable = uniform->m_variables[i];
 
                 variable.name = memberBlock.name;
-                //                variable.type = member.type_flags;
                 variable.bytes = memberBlock.size;
                 variable.bytesPadded = memberBlock.padded_size;
 
                 variable.data.resize(variable.bytes);
-
-                //                uint32_t bytes;
-                //                switch (member.type_flags) {
-                //                    case SPV_REFLECT_TYPE_FLAG_INT:
-                //                    case SPV_REFLECT_TYPE_FLAG_FLOAT:
-                //                        bytes = member.traits.numeric.scalar.width / 8;
-                //                        break;
-                //                    case SPV_REFLECT_TYPE_FLAG_VECTOR | SPV_REFLECT_TYPE_FLAG_INT:
-                //                    case SPV_REFLECT_TYPE_FLAG_VECTOR | SPV_REFLECT_TYPE_FLAG_FLOAT:
-                //                        bytes = member.traits.numeric.vector.component_count * member.traits.numeric.scalar.width / 8;
-                //                        break;
-                //                    case SPV_REFLECT_TYPE_FLAG_MATRIX | SPV_REFLECT_TYPE_FLAG_VECTOR | SPV_REFLECT_TYPE_FLAG_INT:
-                //                    case SPV_REFLECT_TYPE_FLAG_MATRIX | SPV_REFLECT_TYPE_FLAG_VECTOR | SPV_REFLECT_TYPE_FLAG_FLOAT:
-                //                        bytes = member.traits.numeric.matrix.column_count * member.traits.numeric.matrix.row_count * member.traits.numeric.scalar.width / 8;
-                //                        break;
-                //                    default:
-                //                        throw std::runtime_error("Unsupported uniform type!");
-                //                }
-                //                variable.bytes = bytes;
-
-                //                std::cout << variable.name << std::endl;
-                //                std::cout << bytes << " " << memberBlock.size << " " << memberBlock.padded_size << std::endl;
-                //                assert(bytes == memberBlock.size);
             }
 
             return uniform;
@@ -134,11 +108,10 @@ namespace engine {
     private:
         struct UniformVariable {
             std::string name;
-            //            SpvReflectTypeFlags type;
             uint32_t bytes{};
             uint32_t bytesPadded{};
 
-            std::vector<char> data; // TODO(Mirco): use one long data vector for all variables in the uniform
+            std::vector<char> data;
         };
 
         uint32_t m_set{};

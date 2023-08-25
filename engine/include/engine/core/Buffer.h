@@ -66,10 +66,6 @@ namespace engine {
 
             copyBuffer(m_gpuContext, m_buffer, stagingBuffer.m_buffer, m_bufferSettings.m_sizeBytes); // copy contents from staging buffer to high performance memory on GPU, which cannot be accessed directly by the CPU (therefore the staging buffer)
 
-            //            void *stagingMemory;
-            //            vkMapMemory(m_device, stagingBuffer.m_bufferMemory, 0, m_bufferSettings.m_sizeBytes, 0, &stagingMemory); // memory-mapped I/O
-            //            memcpy(data, stagingMemory, m_bufferSettings.m_sizeBytes);
-            //            vkUnmapMemory(m_device, stagingBuffer.m_bufferMemory);
             stagingBuffer.download(data);
 
             stagingBuffer.release();

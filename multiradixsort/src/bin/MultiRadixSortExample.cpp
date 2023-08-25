@@ -4,7 +4,6 @@
 
 int main() {
 #ifdef RESOURCE_DIRECTORY_PATH
-    std::cout << "RESOURCE_DIRECTORY_PATH=" << RESOURCE_DIRECTORY_PATH << std::endl;
     engine::Paths::m_resourceDirectoryPath = RESOURCE_DIRECTORY_PATH;
 #endif
 

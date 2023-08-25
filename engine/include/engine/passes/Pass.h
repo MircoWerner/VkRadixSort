@@ -285,16 +285,6 @@ namespace engine {
             m_signalSemaphores.resize(m_gpuContext->getMultiBufferedCount());
             m_fences.resize(m_gpuContext->getMultiBufferedCount());
 
-            /*
-             * VkSemaphoreTypeCreateInfo timelineCreateInfo;
-timelineCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
-timelineCreateInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
-timelineCreateInfo.initialValue = 0;
-VkSemaphoreCreateInfo semaphoreInfo{};
-semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-semaphoreInfo.pNext = &timelineCreateInfo;
-semaphoreInfo.flags = 0;
-             */
             VkSemaphoreCreateInfo semaphoreInfo{};
             semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 

@@ -17,8 +17,8 @@ namespace engine {
             VkExtent3D workGroupSize = m_shaders[stageIndex]->getWorkGroupSize();
             VkExtent3D dispatchSize = getDispatchSize(width, height, depth, workGroupSize);
             m_workGroupCounts[stageIndex] = {dispatchSize.width, dispatchSize.height, dispatchSize.depth};
-            std::cout << "m_workGroupSize[" << stageIndex << "]=(" << workGroupSize.width << "," << workGroupSize.height << "," << workGroupSize.depth << ")" << std::endl;
-            std::cout << "m_workGroupCount[" << stageIndex << "]=(" << dispatchSize.width << "," << dispatchSize.height << "," << dispatchSize.depth << ")" << std::endl;
+//            std::cout << "m_workGroupSize[" << stageIndex << "]=(" << workGroupSize.width << "," << workGroupSize.height << "," << workGroupSize.depth << ")" << std::endl;
+//            std::cout << "m_workGroupCount[" << stageIndex << "]=(" << dispatchSize.width << "," << dispatchSize.height << "," << dispatchSize.depth << ")" << std::endl;
         }
 
         static VkExtent3D getDispatchSize(uint32_t width, uint32_t height, uint32_t depth, VkExtent3D workGroupSize) {

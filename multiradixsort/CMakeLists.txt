@@ -7,7 +7,9 @@ set(PROJECT_HEADERS
 
 set(PROJECT_SOURCES
         src/bin/MultiRadixSortExample.cpp
-        )
+        src/MultiRadixSort.cpp
+        src/MultiRadixSortPass.cpp
+)
 
 add_executable(multiradixsortexample ${PROJECT_HEADERS} ${PROJECT_SOURCES})
 

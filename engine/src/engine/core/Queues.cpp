@@ -9,7 +9,7 @@ namespace engine {
         std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
 
-        for (int i = 0; i < queueFamilyCount; i++) { // TODO(Mirco): try to use different queues for each family if possible
+        for (int i = 0; i < queueFamilyCount; i++) {
             const auto &queueFamily = queueFamilies[i];
             if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) { // require queue for graphics commands
                 familyIndices.graphicsFamily = i;
@@ -20,11 +20,6 @@ namespace engine {
             if (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT) { // require queue for transfer commands
                 familyIndices.transferFamily = i;
             }
-            //                VkBool32 presentSupport = false;
-            //                vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_surface, &presentSupport);
-            //                if (presentSupport) { // require queue to present results to screen
-            //                    familyIndices.presentFamily = i;
-            //                }
             if (familyIndices.isComplete(m_requiredQueueFamilies)) {
                 break;
             }

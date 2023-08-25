@@ -7,7 +7,9 @@ set(PROJECT_HEADERS
 
 set(PROJECT_SOURCES
         src/bin/SingleRadixSortExample.cpp
-        )
+        src/SingleRadixSort.cpp
+        src/SingleRadixSortPass.cpp
+)
 
 add_executable(singleradixsortexample ${PROJECT_HEADERS} ${PROJECT_SOURCES})
 

@@ -38,7 +38,7 @@ namespace engine {
                        && (!transfer || transferFamily.has_value());
             }
 
-            void generateQueueCreateInfos(std::vector<VkDeviceQueueCreateInfo> *queueCreateInfos, float *queuePriorities) {
+            void generateQueueCreateInfos(std::vector<VkDeviceQueueCreateInfo> *queueCreateInfos, const float *queuePriorities) {
                 std::set<uint32_t> uniqueQueueFamilies;
                 if (graphicsFamily.has_value()) {
                     uniqueQueueFamilies.emplace(graphicsFamily.value());

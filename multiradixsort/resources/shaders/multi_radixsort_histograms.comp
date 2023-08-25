@@ -1,7 +1,5 @@
 #version 460
 #extension GL_GOOGLE_include_directive: enable
-#extension GL_KHR_shader_subgroup_basic: enable
-#extension GL_KHR_shader_subgroup_arithmetic: enable
 
 #define WORKGROUP_SIZE 256 // assert WORKGROUP_SIZE >= RADIX_SORT_BINS
 #define RADIX_SORT_BINS 256
@@ -28,10 +26,6 @@ void main() {
     uint gID = gl_GlobalInvocationID.x;
     uint lID = gl_LocalInvocationID.x;
     uint wID = gl_WorkGroupID.x;
-    uint workgroupSize = gl_WorkGroupSize.x; // == local_size_x
-    uint sID = gl_SubgroupID;
-    uint lsID = gl_SubgroupInvocationID;
-    uint subgroupSize = gl_SubgroupSize; // == SOUBGROUP_SIZE
 
     // initialize histogram
     if (lID < RADIX_SORT_BINS) {
@@ -41,7 +35,7 @@ void main() {
 
     if (gID < g_num_elements) {
         // determine the bin
-        const uint bin = uint(g_elements_in[gID] >> g_shift) & (RADIX_SORT_BINS - 1);
+        const uint bin = (g_elements_in[gID] >> g_shift) & (RADIX_SORT_BINS - 1);
         // increment the histogram
         atomicAdd(histogram[bin], 1U);
     }

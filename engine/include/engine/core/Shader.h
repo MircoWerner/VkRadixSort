@@ -31,18 +31,16 @@ namespace engine {
         };
 
         Shader(GPUContext *gpuContext, const std::string &inputPath, const std::string &fileName) : m_gpuContext(gpuContext) {
+            std::cout << "[Shader] Compiling " << inputPath << "/" << fileName << std::endl;
+
             std::stringstream outputPath;
-            outputPath << std::filesystem::canonical("/proc/self/exe").remove_filename().c_str() << "resources/shaders"; // TODO(Mirco): does not work on windows
+            outputPath << std::filesystem::canonical("/proc/self/exe").remove_filename().c_str() << "resources/shaders";
             compileShader(inputPath, outputPath.str(), fileName);
             std::vector<char> code = readFile(outputPath.str() + "/" + fileName + ".spv");
 
-            std::cout << "inputPath=" << inputPath << std::endl;
-            std::cout << "fileName=" << fileName << std::endl;
-            //            spirvReflectTest(code);
             reflect(code);
 
             m_shaderModule = createShaderModule(code, m_gpuContext->m_device);
-//            gpuContext->getDebug()->setName(m_shaderModule, "test");
         }
 
         ~Shader() {
@@ -54,107 +52,6 @@ namespace engine {
                 vkDestroyShaderModule(m_gpuContext->m_device, m_shaderModule, nullptr);
             }
             m_shaderModule = nullptr;
-        }
-
-        static void spirvReflectTest(const std::vector<char> &code) {
-            SpvReflectShaderModule module = {};
-            SpvReflectResult result =
-                    spvReflectCreateShaderModule(sizeof(code[0]) * code.size(), code.data(), &module);
-            assert(result == SPV_REFLECT_RESULT_SUCCESS);
-
-            // Enumerate and extract shader's input variables
-            uint32_t var_count = 0;
-            result = spvReflectEnumerateInputVariables(&module, &var_count, nullptr);
-            assert(result == SPV_REFLECT_RESULT_SUCCESS);
-            auto **input_vars =
-                    (SpvReflectInterfaceVariable **) malloc(var_count * sizeof(SpvReflectInterfaceVariable *));
-            result = spvReflectEnumerateInputVariables(&module, &var_count, input_vars);
-            assert(result == SPV_REFLECT_RESULT_SUCCESS);
-            for (uint32_t i = 0; i < var_count; i++) {
-                std::cout << input_vars[i]->location << " " << input_vars[i]->name << std::endl;
-            }
-
-            // descriptor sets
-            uint32_t count = 0;
-            result = spvReflectEnumerateDescriptorSets(&module, &count, nullptr);
-            assert(result == SPV_REFLECT_RESULT_SUCCESS);
-
-            std::cout << "count=" << count << std::endl;
-
-            std::vector<SpvReflectDescriptorSet *> sets(count);
-            result = spvReflectEnumerateDescriptorSets(&module, &count, sets.data());
-            assert(result == SPV_REFLECT_RESULT_SUCCESS);
-
-            std::vector<DescriptorSetLayoutData> set_layouts(sets.size(),
-                                                             DescriptorSetLayoutData{});
-            for (size_t i_set = 0; i_set < sets.size(); ++i_set) {
-                const SpvReflectDescriptorSet &refl_set = *(sets[i_set]);
-                DescriptorSetLayoutData &layout = set_layouts[i_set];
-                layout.bindings.resize(refl_set.binding_count);
-                for (uint32_t i_binding = 0; i_binding < refl_set.binding_count;
-                     ++i_binding) {
-                    const SpvReflectDescriptorBinding &refl_binding =
-                            *(refl_set.bindings[i_binding]);
-                    VkDescriptorSetLayoutBinding &layout_binding = layout.bindings[i_binding];
-                    layout_binding.binding = refl_binding.binding;
-                    layout_binding.descriptorType =
-                            static_cast<VkDescriptorType>(refl_binding.descriptor_type);
-                    layout_binding.descriptorCount = 1;
-                    for (uint32_t i_dim = 0; i_dim < refl_binding.array.dims_count; ++i_dim) {
-                        layout_binding.descriptorCount *= refl_binding.array.dims[i_dim];
-                    }
-                    layout_binding.stageFlags =
-                            static_cast<VkShaderStageFlagBits>(module.shader_stage);
-                }
-                layout.set_number = refl_set.set;
-                layout.create_info.sType =
-                        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-                layout.create_info.bindingCount = refl_set.binding_count;
-                layout.create_info.pBindings = layout.bindings.data();
-            }
-
-            for (const auto &layout: set_layouts) {
-                std::cout << std::endl;
-                std::cout << "new layout" << std::endl;
-
-                std::cout << layout.set_number << std::endl;
-
-                std::cout << layout.create_info.bindingCount << std::endl;
-                std::cout << layout.create_info.flags << std::endl;
-                std::cout << layout.create_info.pBindings << std::endl;
-
-                for (const auto &binding: layout.bindings) {
-                    std::cout << "=== new binding ===" << std::endl;
-                    std::cout << binding.descriptorCount << std::endl;
-                    std::cout << binding.binding << std::endl;
-                    std::cout << "type==ubo => " << (binding.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) << std::endl;
-                    std::cout << "type==buffer => " << (binding.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) << std::endl;
-                    std::cout << "type==image => " << (binding.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) << std::endl;
-                    std::cout << binding.pImmutableSamplers << std::endl;
-                    std::cout << binding.stageFlags << std::endl;
-                }
-            }
-
-            {
-                const SpvReflectDescriptorSet &refl_set = *(sets[0]);
-                for (uint32_t i_binding = 0; i_binding < refl_set.binding_count; ++i_binding) {
-                    const auto &binding = refl_set.bindings[i_binding];
-                    if (static_cast<VkDescriptorType>(binding->descriptor_type) == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-                        std::cout << binding->type_description->type_name << std::endl;
-                        std::cout << binding->type_description->member_count << std::endl;
-                        for (uint32_t i = 0; i < binding->type_description->member_count; i++) {
-                            std::cout << "lol" << std::endl;
-                            const auto &member = binding->type_description->members[i];
-                            std::cout << member.type_flags << std::endl;
-                            std::cout << member.traits.numeric.scalar.width << std::endl;
-                            std::cout << member.traits.numeric.vector.component_count << std::endl;
-                            std::cout << member.traits.numeric.matrix.stride << std::endl;
-                        }
-                    }
-                }
-            }
-
-            spvReflectDestroyShaderModule(&module);
         }
 
         VkPipelineShaderStageCreateInfo generateShaderStageCreateInfo(VkShaderStageFlagBits shaderStage) {
@@ -248,8 +145,6 @@ namespace engine {
             uint32_t count = 0;
             SpvReflectResult result = spvReflectEnumerateDescriptorSets(&module, &count, NULL);
             assert(result == SPV_REFLECT_RESULT_SUCCESS);
-
-            std::cout << "number of descriptor sets:" << count << std::endl;
 
             std::vector<SpvReflectDescriptorSet *> sets(count);
             result = spvReflectEnumerateDescriptorSets(&module, &count, sets.data());

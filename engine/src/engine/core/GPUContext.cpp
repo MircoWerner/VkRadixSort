@@ -165,9 +165,13 @@ namespace engine {
             std::cout << "[" << i << "] " << deviceProperties.deviceName << std::endl;
         }
         std::cout << "Enter the number of the device... ";
-        std::string s = "0";
-        std::cout << s << std::endl; // TODO(Mirco)
-                                     //        std::cin >> s;
+        std::string s;
+        if (deviceCount == 1) {
+            s = "0";
+            std::cout << s << std::endl;
+        } else {
+            std::cin >> s;
+        }
         int i;
         try {
             i = std::stoi(s);
@@ -184,13 +188,10 @@ namespace engine {
         if (m_physicalDevice == VK_NULL_HANDLE) {
             throw std::runtime_error("Failed to find a suitable GPU!");
         }
-        // TODO(Mirco): check if the device is suitable (swapchain support if required, extensions supported...)
-
 
         VkPhysicalDeviceVulkan12Features v12Features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
         VkPhysicalDeviceFeatures2 deviceFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, .pNext = &v12Features};
         vkGetPhysicalDeviceFeatures2(m_physicalDevice, &deviceFeatures);
-        std::cout << v12Features.bufferDeviceAddress << std::endl;
     }
 
     void GPUContext::createLogicalDevice() {
