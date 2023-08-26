@@ -1,5 +1,7 @@
 #include "MultiRadixSort.h"
 
+#include <glm/ext.hpp>
+
 namespace engine {
 
     void MultiRadixSort::execute(GPUContext *gpuContext) {
@@ -10,8 +12,11 @@ namespace engine {
         m_pass = std::make_shared<MultiRadixSortPass>(gpuContext);
         m_pass->create();
         const uint NUM_BLOCKS_PER_WORKGROUP = 16;
-        m_pass->setGlobalInvocationSize(MultiRadixSortPass::RADIX_SORT_HISTOGRAMS, NUM_ELEMENTS / NUM_BLOCKS_PER_WORKGROUP, 1, 1);
-        m_pass->setGlobalInvocationSize(MultiRadixSortPass::RADIX_SORT, NUM_ELEMENTS / NUM_BLOCKS_PER_WORKGROUP, 1, 1);
+        uint32_t globalInvocationSize = NUM_ELEMENTS / NUM_BLOCKS_PER_WORKGROUP;
+        uint32_t remainder = NUM_ELEMENTS % NUM_BLOCKS_PER_WORKGROUP;
+        globalInvocationSize += remainder > 0 ? 1 : 0;
+        m_pass->setGlobalInvocationSize(MultiRadixSortPass::RADIX_SORT_HISTOGRAMS,globalInvocationSize, 1, 1);
+        m_pass->setGlobalInvocationSize(MultiRadixSortPass::RADIX_SORT, globalInvocationSize, 1, 1);
 
         // push constants
         const uint NUM_WORKGROUPS = m_pass->getWorkGroupCount(MultiRadixSortPass::RADIX_SORT_HISTOGRAMS).width;
