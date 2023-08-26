@@ -31,11 +31,14 @@ For detailed information on integrating the shaders and timings see below.
   own Vulkan project)
     - [Shaders / Compute Pass](#single--shaders--compute-pass)
     - [Buffers](#single--buffers)
+    - [Push Constants](#single--push--constants)
     - [Execute](#single--execute)
 - [Own Usage: Multi Radix Sort](#multi--own-usage) (how to use the `multi_radixsort` / the compute shaders in your own
   Vulkan project)
+    - [Number of Blocks per Work Group](#multi--numblocks)
     - [Shaders / Compute Pass](#multi--shaders--compute-pass)
     - [Buffers](#multi--buffers)
+    - [Push Constants](#multi--push--constants)
     - [Execute](#multi--execute)
 - [Timings](#timings)
 
@@ -126,8 +129,7 @@ Use `VK_BUFFER_USAGE_STORAGE_BUFFER_BIT` and `VK_MEMORY_PROPERTY_DEVICE_LOCAL_BI
 `m_buffer0` is the input buffer and will also contain the sorted output. `m_buffer1` is used during the computation (
 ping pong buffer).
 
-<a name="push--constants"></a>
-
+<a name="single--push--constants"></a>
 ### Push Constants
 
 Define the following push constant struct for the shader and set its data:
@@ -138,13 +140,12 @@ struct PushConstants {
 };
 ```
 
-<a name="execute-"></a>
-
+<a name="single--execute"></a>
 ### Execute
 
 Execute the compute pass. Wait for the compute queue to idle. The result is in the `m_buffer0` buffer.
 
-<a name="own--usage"></a>
+<a name="multi--own--usage"></a>
 
 ## Own Usage: Multi Radix Sort
 
@@ -152,17 +153,18 @@ Explanation how to use the `multi_radixsort` in your own Vulkan project.
 Assume you have a vector/array of `uint32_t` (you have to preprocess negative numbers; uint64_t requires to adjust the
 number of iterations defined in the shader) with a size of `NUM_ELEMENTS`.
 
+<a name="multi--numblocks"></a>
 ### Number of Blocks per Work Group
 
 Each thread in a work group normally processes a single element. This is slow because a lot of work groups have to be
 launched. Instead, the number of elements each thread of a work group processes ("number of processed blocks per work
 group") can be increased. Assume this is stored in `NUM_BLOCKS_PER_WORKGROUP` (uint32_t, >= 1).
 
-<a name="shaders--compute-pass"></a>
+<a name="multi--shaders--compute-pass"></a>
 
 ### Shaders / Compute Pass
 
-Copy the following [shaders](https://github.com/MircoWerner/VkRadixSort/tree/main/singleradixsort/resources/shaders) to
+Copy the following [shaders](https://github.com/MircoWerner/VkRadixSort/tree/main/multiradixsort/resources/shaders) to
 your project:
 
 ```
@@ -191,8 +193,7 @@ multi_radixsort: (globalInvocationSize, 1, 1)
 We will later execute this pass (consisting of the two successive shaders) four times to first sort the lower 8 bits,
 then the next higher 8 bits...
 
-<a name="buffers"></a>
-
+<a name="multi--buffers"></a>
 ### Buffers
 
 Create the following three buffers and assign them to the following sets and indices of your compute pass:
@@ -210,8 +211,7 @@ buffers have to be bound to different indices in different iterations.
 
 Use `VK_BUFFER_USAGE_STORAGE_BUFFER_BIT` and `VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT`.
 
-<a name="push--constants"></a>
-
+<a name="multi--push--constants"></a>
 ### Push Constants
 
 Define the following push constant structs for the two shaders and set their data:
@@ -234,7 +234,7 @@ struct PushConstants {
 
 (*) The shift has to be set to `0` in iteration zero and to `8`, `16`, `24` in iteration one, two, three respectively.
 
-<a name="execute-"></a>
+<a name="multi--execute"></a>
 ### Execute
 Execute the compute pass four times (remember to adjust the buffer bindings and shifts in each iteration). Wait for the compute queue to idle. The result is in the `m_buffer0` buffer.
 
