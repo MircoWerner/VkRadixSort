@@ -40,6 +40,10 @@ namespace engine {
         // clean up
         releaseBuffers();
         m_pass->release();
+
+//        std::ofstream myfile;
+//        myfile.open("singleradixsort.csv", std::ios_base::app);
+//        myfile << NUM_ELEMENTS << " " << std::to_string(gpuSortTime) << " " << std::to_string(cpuSortTime) << std::endl;
     }
 
     void SingleRadixSort::prepareBuffers() {

@@ -10,19 +10,19 @@ int main() {
 
     engine::GPUContext gpu(engine::Queues::QueueFamilies::COMPUTE_FAMILY | engine::Queues::TRANSFER_FAMILY);
 
-    for (uint32_t i = 0; i < 1; i++) {
-        try {
-            gpu.init();
+    //    for (uint32_t i = 0; i < 16; i++) {
+    try {
+        gpu.init();
 
-            auto app = std::make_shared<engine::SingleRadixSort>();
-            app->execute(&gpu);
+        auto app = std::make_shared<engine::SingleRadixSort>();
+        app->execute(&gpu);
 
-            gpu.shutdown();
-        } catch (const std::exception &e) {
-            std::cerr << e.what() << std::endl;
-            return EXIT_FAILURE;
-        }
+        gpu.shutdown();
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        return EXIT_FAILURE;
     }
+    //    }
 
     return EXIT_SUCCESS;
 }

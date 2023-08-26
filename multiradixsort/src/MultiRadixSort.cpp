@@ -1,7 +1,5 @@
 #include "MultiRadixSort.h"
 
-#include <glm/ext.hpp>
-
 namespace engine {
 
     void MultiRadixSort::execute(GPUContext *gpuContext) {
@@ -11,7 +9,7 @@ namespace engine {
         // compute pass
         m_pass = std::make_shared<MultiRadixSortPass>(gpuContext);
         m_pass->create();
-        const uint NUM_BLOCKS_PER_WORKGROUP = 16;
+        const uint NUM_BLOCKS_PER_WORKGROUP = 32;
         uint32_t globalInvocationSize = NUM_ELEMENTS / NUM_BLOCKS_PER_WORKGROUP;
         uint32_t remainder = NUM_ELEMENTS % NUM_BLOCKS_PER_WORKGROUP;
         globalInvocationSize += remainder > 0 ? 1 : 0;
@@ -71,6 +69,10 @@ namespace engine {
         // clean up
         releaseBuffers();
         m_pass->release();
+
+//        std::ofstream myfile;
+//        myfile.open("multiradixsort_block_" + std::to_string(NUM_ELEMENTS) + ".csv", std::ios_base::app);
+//        myfile << NUM_ELEMENTS << " " << NUM_BLOCKS_PER_WORKGROUP << " " << std::to_string(gpuSortTime) << " " << std::to_string(cpuSortTime) << std::endl;
     }
 
     void MultiRadixSort::prepareBuffers() {
