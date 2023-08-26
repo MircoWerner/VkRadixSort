@@ -17,6 +17,8 @@ namespace engine {
         struct PushConstantsHistograms {
             uint32_t g_num_elements;
             uint32_t g_shift;
+            uint32_t g_num_workgroups;
+            uint32_t g_num_blocks_per_workgroup;
         };
 
         PushConstantsHistograms m_pushConstantsHistogram{};
@@ -25,6 +27,7 @@ namespace engine {
             uint32_t g_num_elements;
             uint32_t g_shift;
             uint32_t g_num_workgroups;
+            uint32_t g_num_blocks_per_workgroup;
         };
 
         PushConstants m_pushConstants{};

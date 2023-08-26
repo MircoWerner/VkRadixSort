@@ -4,7 +4,7 @@
 #extension GL_KHR_shader_subgroup_arithmetic: enable
 #extension GL_KHR_shader_subgroup_ballot: enable
 
-#define WORKGROUP_SIZE 256 // assert WORKGROUP_SIZE >= RADIX_SORT_BINS
+#define WORKGROUP_SIZE 256// assert WORKGROUP_SIZE >= RADIX_SORT_BINS
 #define RADIX_SORT_BINS 256
 #define SUBGROUP_SIZE 32
 
@@ -14,6 +14,7 @@ layout (push_constant, std430) uniform PushConstants {
     uint g_num_elements;
     uint g_shift;
     uint g_num_workgroups;
+    uint g_num_blocks_per_workgroup;
 };
 
 layout (std430, set = 1, binding = 0) buffer elements_in {
@@ -25,12 +26,12 @@ layout (std430, set = 1, binding = 1) buffer elements_out {
 };
 
 layout (std430, set = 1, binding = 2) buffer histograms {
-    // [histogram_of_workgroup_0 | histogram_of_workgroup_1 | ... ]
-    uint g_histograms[]; // |g_histograms| = RADIX_SORT_BINS * #WORKGROUPS = RADIX_SORT_BINS * g_num_workgroups
+// [histogram_of_workgroup_0 | histogram_of_workgroup_1 | ... ]
+    uint g_histograms[];// |g_histograms| = RADIX_SORT_BINS * #WORKGROUPS = RADIX_SORT_BINS * g_num_workgroups
 };
 
-shared uint[RADIX_SORT_BINS / SUBGROUP_SIZE] sums; // subgroup reductions
-shared uint[RADIX_SORT_BINS] global_offsets; // global exclusive scan (prefix sum)
+shared uint[RADIX_SORT_BINS / SUBGROUP_SIZE] sums;// subgroup reductions
+shared uint[RADIX_SORT_BINS] global_offsets;// global exclusive scan (prefix sum)
 
 struct BinFlags {
     uint flags[WORKGROUP_SIZE / SUBGROUP_SIZE];
@@ -44,11 +45,9 @@ void main() {
     uint sID = gl_SubgroupID;
     uint lsID = gl_SubgroupInvocationID;
 
-//    const uint startID = wID * g_num_elements / WORKGROUP_SIZE;
-//    const uint endID = (wID + 1) * g_num_elements / WORKGROUP_SIZE;
-
     uint local_histogram = 0;
     uint prefix_sum = 0;
+    uint histogram_count = 0;
 
     if (lID < RADIX_SORT_BINS) {
         uint count = 0;
@@ -57,7 +56,7 @@ void main() {
             local_histogram = (j == wID) ? count : local_histogram;
             count += t;
         }
-        const uint histogram_count = count;
+        histogram_count = count;
         const uint sum = subgroupAdd(histogram_count);
         prefix_sum = subgroupExclusiveAdd(histogram_count);
         if (subgroupElect()) {
@@ -73,34 +72,18 @@ void main() {
         global_offsets[lID] = global_histogram + local_histogram;
     }
 
-    // debug
-    //    g_elements_out[lID] = histogram[lID];
-    //    if (lID < WORKGROUP_SIZE / SUBGROUP_SIZE) {
-    //        g_elements_out[lID] = sums[lID];
-    //    } else {
-    //        g_elements_out[lID] = 1111U;
-    //    }
-    //    g_elements_out[lID] = local_offsets[lID];
-//    barrier();
-//    if (gID < g_num_elements) {
-//        g_elements_out[gID] = sums[lID];
-//    }
-//    return;
-
     //     ==== scatter keys according to global offsets =====
     const uint flags_bin = lID / SUBGROUP_SIZE;
     const uint flags_bit = 1 << (lID % SUBGROUP_SIZE);
 
-//    for (uint blockID = startID; blockID < endID; blockID += WORKGROUP_SIZE) { // TODO(Mirco): let each work group handle multiple items
-        barrier();
 
-//        const uint ID = blockID + lID;
-        const uint ID = gID;
+    for (uint index = 0; index < g_num_blocks_per_workgroup; index++) {
+        uint elementId = wID * g_num_blocks_per_workgroup * WORKGROUP_SIZE + index * WORKGROUP_SIZE + lID;
 
         // initialize bin flags
         if (lID < RADIX_SORT_BINS) {
             for (int i = 0; i < WORKGROUP_SIZE / SUBGROUP_SIZE; i++) {
-                bin_flags[lID].flags[i] = 0U; // init all bin flags to 0
+                bin_flags[lID].flags[i] = 0U;// init all bin flags to 0
             }
         }
         barrier();
@@ -108,9 +91,8 @@ void main() {
         uint element_in = 0;
         uint binID = 0;
         uint binOffset = 0;
-//        if (ID < endID) {
-        if (ID < g_num_elements) {
-            element_in = g_elements_in[ID];
+        if (elementId < g_num_elements) {
+            element_in = g_elements_in[elementId];
             binID = (element_in >> g_shift) & uint(RADIX_SORT_BINS - 1);
             // offset for group
             binOffset = global_offsets[binID];
@@ -119,8 +101,7 @@ void main() {
         }
         barrier();
 
-//        if (ID < endID) {
-        if (ID < g_num_elements) {
+        if (elementId < g_num_elements) {
             // calculate output index of element
             uint prefix = 0;
             uint count = 0;
@@ -134,8 +115,10 @@ void main() {
             }
             g_elements_out[binOffset + prefix] = element_in;
             if (prefix == count - 1) {
-                global_offsets[binID] += count;
+                atomicAdd(global_offsets[binID], count);
             }
         }
-//    }
+
+        barrier();
+    }
 }

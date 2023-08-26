@@ -9,6 +9,8 @@ layout (local_size_x = WORKGROUP_SIZE) in;
 layout (push_constant, std430) uniform PushConstants {
     uint g_num_elements;
     uint g_shift;
+    uint g_num_workgroups;
+    uint g_num_blocks_per_workgroup;
 };
 
 layout (std430, set = 0, binding = 0) buffer elements_in {
@@ -33,11 +35,14 @@ void main() {
     }
     barrier();
 
-    if (gID < g_num_elements) {
-        // determine the bin
-        const uint bin = (g_elements_in[gID] >> g_shift) & (RADIX_SORT_BINS - 1);
-        // increment the histogram
-        atomicAdd(histogram[bin], 1U);
+    for (uint index = 0; index < g_num_blocks_per_workgroup; index++) {
+        uint elementId = wID * g_num_blocks_per_workgroup * WORKGROUP_SIZE + index * WORKGROUP_SIZE + lID;
+        if (elementId < g_num_elements) {
+            // determine the bin
+            const uint bin = (g_elements_in[elementId] >> g_shift) & (RADIX_SORT_BINS - 1);
+            // increment the histogram
+            atomicAdd(histogram[bin], 1U);
+        }
     }
     barrier();
 

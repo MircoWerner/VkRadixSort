@@ -9,15 +9,19 @@ namespace engine {
         // compute pass
         m_pass = std::make_shared<MultiRadixSortPass>(gpuContext);
         m_pass->create();
-        m_pass->setGlobalInvocationSize(MultiRadixSortPass::RADIX_SORT_HISTOGRAMS, NUM_ELEMENTS, 1, 1);
-        m_pass->setGlobalInvocationSize(MultiRadixSortPass::RADIX_SORT, NUM_ELEMENTS, 1, 1);
+        const uint NUM_BLOCKS_PER_WORKGROUP = 16;
+        m_pass->setGlobalInvocationSize(MultiRadixSortPass::RADIX_SORT_HISTOGRAMS, NUM_ELEMENTS / NUM_BLOCKS_PER_WORKGROUP, 1, 1);
+        m_pass->setGlobalInvocationSize(MultiRadixSortPass::RADIX_SORT, NUM_ELEMENTS / NUM_BLOCKS_PER_WORKGROUP, 1, 1);
 
         // push constants
         const uint NUM_WORKGROUPS = m_pass->getWorkGroupCount(MultiRadixSortPass::RADIX_SORT_HISTOGRAMS).width;
         assert(NUM_WORKGROUPS == m_pass->getWorkGroupCount(MultiRadixSortPass::RADIX_SORT).width);
         m_pass->m_pushConstantsHistogram.g_num_elements = NUM_ELEMENTS;
+        m_pass->m_pushConstantsHistogram.g_num_workgroups = NUM_WORKGROUPS;
+        m_pass->m_pushConstantsHistogram.g_num_blocks_per_workgroup = NUM_BLOCKS_PER_WORKGROUP;
         m_pass->m_pushConstants.g_num_elements = NUM_ELEMENTS;
         m_pass->m_pushConstants.g_num_workgroups = NUM_WORKGROUPS;
+        m_pass->m_pushConstants.g_num_blocks_per_workgroup = NUM_BLOCKS_PER_WORKGROUP;
 
         // buffers
         prepareBuffers();
@@ -66,6 +70,7 @@ namespace engine {
 
     void MultiRadixSort::prepareBuffers() {
         generateRandomNumbers(m_elementsIn, NUM_ELEMENTS);
+//        printBuffer("elements_in", m_elementsIn, NUM_ELEMENTS);
         auto settings0 = Buffer::BufferSettings{.m_sizeBytes = NUM_ELEMENTS_BYTES, .m_bufferUsages = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, .m_memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, .m_name = "radixSort.elementBuffer0"};
         m_buffers[0] = Buffer::fillDeviceWithStagingBuffer(m_gpuContext, settings0, m_elementsIn.data());
 
@@ -90,7 +95,7 @@ namespace engine {
             if (i > 0 && i % 16 == 0) {
                 std::cout << std::endl;
             }
-            std::cout << std::setfill('0') << std::setw(9) << buffer[i] << " ";
+            std::cout << std::setfill(' ') << std::setw(9) << buffer[i] << " ";
         }
         std::cout << std::endl;
     }
@@ -138,4 +143,4 @@ namespace engine {
         std::cout << PRINT_PREFIX << "Test passed." << std::endl;
         return true;
     }
-}
+} // namespace engine
