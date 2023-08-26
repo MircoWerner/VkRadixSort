@@ -145,8 +145,7 @@ struct PushConstants {
 
 Execute the compute pass. Wait for the compute queue to idle. The result is in the `m_buffer0` buffer.
 
-<a name="multi--own--usage"></a>
-
+<a name="multi--own-usage"></a>
 ## Own Usage: Multi Radix Sort
 
 Explanation how to use the `multi_radixsort` in your own Vulkan project.
