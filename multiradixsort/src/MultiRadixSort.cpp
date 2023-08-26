@@ -13,7 +13,7 @@ namespace engine {
         uint32_t globalInvocationSize = NUM_ELEMENTS / NUM_BLOCKS_PER_WORKGROUP;
         uint32_t remainder = NUM_ELEMENTS % NUM_BLOCKS_PER_WORKGROUP;
         globalInvocationSize += remainder > 0 ? 1 : 0;
-        m_pass->setGlobalInvocationSize(MultiRadixSortPass::RADIX_SORT_HISTOGRAMS,globalInvocationSize, 1, 1);
+        m_pass->setGlobalInvocationSize(MultiRadixSortPass::RADIX_SORT_HISTOGRAMS, globalInvocationSize, 1, 1);
         m_pass->setGlobalInvocationSize(MultiRadixSortPass::RADIX_SORT, globalInvocationSize, 1, 1);
 
         // push constants
@@ -33,13 +33,14 @@ namespace engine {
         // set storage buffers
         uint32_t activeIndex = m_gpuContext->getActiveIndex();
 
-        m_pass->setStorageBuffer(activeIndex, MultiRadixSortPass::RADIX_SORT_HISTOGRAMS, 0, m_buffers[0].get());
-        m_pass->setStorageBuffer((activeIndex + 1) % 2, MultiRadixSortPass::RADIX_SORT_HISTOGRAMS, 0, m_buffers[1].get());
+        // m_buffer0
+        m_pass->setStorageBuffer(activeIndex, MultiRadixSortPass::RADIX_SORT_HISTOGRAMS, 0, m_buffers[0].get()); // iteration 0 and 2 (0,0)
+        m_pass->setStorageBuffer(activeIndex, MultiRadixSortPass::RADIX_SORT, 0, m_buffers[0].get());            // iteration 0 and 2 (1,0)
+        m_pass->setStorageBuffer((activeIndex + 1) % 2, MultiRadixSortPass::RADIX_SORT, 1, m_buffers[0].get());  // iteration 1 and 3 (1,1)
 
-        m_pass->setStorageBuffer(activeIndex, MultiRadixSortPass::RADIX_SORT, 0, m_buffers[0].get());
-        m_pass->setStorageBuffer((activeIndex + 1) % 2, MultiRadixSortPass::RADIX_SORT, 0, m_buffers[1].get());
-        m_pass->setStorageBuffer(activeIndex, MultiRadixSortPass::RADIX_SORT, 1, m_buffers[1].get());
-        m_pass->setStorageBuffer((activeIndex + 1) % 2, MultiRadixSortPass::RADIX_SORT, 1, m_buffers[0].get());
+        m_pass->setStorageBuffer((activeIndex + 1) % 2, MultiRadixSortPass::RADIX_SORT_HISTOGRAMS, 0, m_buffers[1].get()); // iteration 1 and 3 (0,0)
+        m_pass->setStorageBuffer(activeIndex, MultiRadixSortPass::RADIX_SORT, 1, m_buffers[1].get());                      // iteration 0 and 2 (1,1)
+        m_pass->setStorageBuffer((activeIndex + 1) % 2, MultiRadixSortPass::RADIX_SORT, 0, m_buffers[1].get());            // iteration 1 and 3 (1,0)
 
         m_pass->setStorageBuffer(MultiRadixSortPass::RADIX_SORT_HISTOGRAMS, 1, m_buffers[2].get());
         m_pass->setStorageBuffer(MultiRadixSortPass::RADIX_SORT, 2, m_buffers[2].get());
@@ -70,14 +71,14 @@ namespace engine {
         releaseBuffers();
         m_pass->release();
 
-//        std::ofstream myfile;
-//        myfile.open("multiradixsort_block_" + std::to_string(NUM_ELEMENTS) + ".csv", std::ios_base::app);
-//        myfile << NUM_ELEMENTS << " " << NUM_BLOCKS_PER_WORKGROUP << " " << std::to_string(gpuSortTime) << " " << std::to_string(cpuSortTime) << std::endl;
+        //        std::ofstream myfile;
+        //        myfile.open("multiradixsort_block_" + std::to_string(NUM_ELEMENTS) + ".csv", std::ios_base::app);
+        //        myfile << NUM_ELEMENTS << " " << NUM_BLOCKS_PER_WORKGROUP << " " << std::to_string(gpuSortTime) << " " << std::to_string(cpuSortTime) << std::endl;
     }
 
     void MultiRadixSort::prepareBuffers() {
         generateRandomNumbers(m_elementsIn, NUM_ELEMENTS);
-//        printBuffer("elements_in", m_elementsIn, NUM_ELEMENTS);
+        //        printBuffer("elements_in", m_elementsIn, NUM_ELEMENTS);
         auto settings0 = Buffer::BufferSettings{.m_sizeBytes = NUM_ELEMENTS_BYTES, .m_bufferUsages = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, .m_memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, .m_name = "radixSort.elementBuffer0"};
         m_buffers[0] = Buffer::fillDeviceWithStagingBuffer(m_gpuContext, settings0, m_elementsIn.data());
 
