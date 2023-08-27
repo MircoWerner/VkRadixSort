@@ -240,6 +240,7 @@ Execute the compute pass four times (remember to adjust the buffer bindings and 
 <a name="timings"></a>
 ## Timings
 Tests performed on NVIDIA GeForce RTX 3070 8GB and AMD Ryzen 5 2600 with 2x Crucial RAM 16GB DDR4 3200MHz.
+`NUM_ELEMENTS` random `uint32_t` are sorted (generated with [mt19937](https://cplusplus.com/reference/random/mt19937/), see [here in the code](https://github.com/MircoWerner/VkRadixSort/blob/main/multiradixsort/src/MultiRadixSort.cpp#L117)).
 **Notice that these are log scale plots!**
 When sorting only a small number of elements, the runtime difference between the two GPU sorting variants is smaller.
 With an increase in the number of elements to sort, the advantage of using multiple workgroups becomes clear.
