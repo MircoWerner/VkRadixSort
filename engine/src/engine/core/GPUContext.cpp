@@ -209,15 +209,9 @@ namespace engine {
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
         VkPhysicalDeviceVulkan11Features features11{
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
-        VkPhysicalDeviceAccelerationStructureFeaturesKHR asFeatures{
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
-        VkPhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeatures{
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
         features2.pNext = &features13;
         features13.pNext = &features12;
         features12.pNext = &features11;
-        features11.pNext = &asFeatures;
-        asFeatures.pNext = &rtPipelineFeatures;
 
         vkGetPhysicalDeviceFeatures2(m_physicalDevice, &features2);
 
