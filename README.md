@@ -11,7 +11,7 @@ Tested on Linux with NVIDIA RTX 3070 GPU.
 ## (IMPORTANT) Versions: Single vs. Multi Radix Sort
 
 This repository contains two implementations of the radix sort on the GPU: The `single_radixsort` uses only a single
-work group, consists of one shader and easy to set up. The `multi_radixsort` uses multiple work groups, consists of two
+work group, consists of one shader and is easy to set up. The `multi_radixsort` uses multiple work groups, consists of two
 shaders that have to be executed several times in succession alternately and is therefore more complicated to set up but
 yields higher performance for larger number of elements.
 
@@ -20,7 +20,7 @@ yields higher performance for larger number of elements.
 | + easy to set up                                    | - more complicated to set up                                  |
 | + yields good performance for fewer elements (<10k) | + yields good performance even for a large number of elements |
 
-For detailed information on integrating the shaders and timings see below.
+For detailed information on integrating the shaders and for timings see below.
 
 ## Table of Contents
 
@@ -126,8 +126,7 @@ Create the following two buffers and assign them to the following sets and indic
 | m_buffer1 | NUM_ELEMENTS * sizeof(uint32_t) | -                  | (0,1)       |
 
 Use `VK_BUFFER_USAGE_STORAGE_BUFFER_BIT` and `VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT`.
-`m_buffer0` is the input buffer and will also contain the sorted output. `m_buffer1` is used during the computation (
-ping pong buffer).
+`m_buffer0` is the input buffer and will also contain the sorted output. `m_buffer1` is used during the computation (ping pong buffer).
 
 <a name="single--push--constants"></a>
 ### Push Constants
@@ -157,7 +156,8 @@ number of iterations defined in the shader) with a size of `NUM_ELEMENTS`.
 
 Each thread in a work group normally processes a single element. This is slow because a lot of work groups have to be
 launched. Instead, the number of elements each thread of a work group processes ("number of processed blocks per work
-group") can be increased. Assume this is stored in `NUM_BLOCKS_PER_WORKGROUP` (uint32_t, >= 1).
+group") can be increased. Assume this is stored in `NUM_BLOCKS_PER_WORKGROUP` (uint32_t, >= 1). 
+See [Timings](#timings) for more information on how to choose the parameter.
 
 <a name="multi--shaders--compute-pass"></a>
 
@@ -195,7 +195,7 @@ then the next higher 8 bits...
 <a name="multi--buffers"></a>
 ### Buffers
 
-Create the following three buffers and assign them to the following sets and indices of your compute pass:
+Create the following three buffers and assign them to the following sets and indices of your compute pass.
 Since we use the `m_buffer0` and `m_buffer1` alternating as input/output in the four iterations (ping pong buffers), the
 buffers have to be bound to different indices in different iterations.
 
@@ -247,7 +247,7 @@ With an increase in the number of elements to sort, the advantage of using multi
 ![img comparison](https://github.com/MircoWerner/VkRadixSort/blob/main/timings/radixsort_comparison.png?raw=true)
 
 ### NUM_BLOCKS_PER_WORKGROUP
-Now let us take a look on the `NUM_BLOCKS_PER_WORKGROUP` parameter in the `multi_radixsort`.
+Now let us take a look at the `NUM_BLOCKS_PER_WORKGROUP` parameter in the `multi_radixsort`.
 As already mentioned in the section [Number of Blocks per Work Group](#multi--numblocks), it is slow if each thread in a work group processes only a single element.
 For 1,000,000 elements, the `single_radixsort` with only one work group takes 18.973ms.
 Setting `NUM_BLOCKS_PER_WORKGROUP=1` takes 30.04ms, since a lot of work groups (3907 = ceil(1,000,000/256/1)) have to be executed (high scheduling overhead).
@@ -257,7 +257,7 @@ For a certain number of elements, we can find the best tradeoff between scheduli
 For 1,000,000 elements, this sweet spot is for my GPU `NUM_BLOCKS_PER_WORKGROUP=32` (using 123 work groups).
 I have done this optimization for the other tested number of elements (100, 1000, ...).
 You can see the results in the diagrams in the spoiler below.
-The optimized results are shown in the diagram above.
+The optimized results are shown in the diagram above for the `multi_radixsort` line.
 
 ![img 1000000](https://github.com/MircoWerner/VkRadixSort/blob/main/timings/radixsort_multi_1000000.png?raw=true)
 
