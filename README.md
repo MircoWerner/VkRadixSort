@@ -240,9 +240,29 @@ Execute the compute pass four times (remember to adjust the buffer bindings and 
 <a name="timings"></a>
 ## Timings
 Tests performed on NVIDIA GeForce RTX 3070 8GB and AMD Ryzen 5 2600 with 2x Crucial RAM 16GB DDR4 3200MHz.
+**Notice that these are log scale plots!**
+When sorting only a small number of elements, the runtime difference between the two GPU sorting variants is smaller.
+With an increase in the number of elements to sort, the advantage of using multiple workgroups becomes clear.
 
 ![img comparison](https://github.com/MircoWerner/VkRadixSort/blob/main/timings/radixsort_comparison.png?raw=true)
 
+### NUM_BLOCKS_PER_WORKGROUP
+Now let us take a look on the `NUM_BLOCKS_PER_WORKGROUP` parameter in the `multi_radixsort`.
+As already mentioned in the section [Number of Blocks per Work Group](#multi--numblocks), it is slow if each thread in a work group processes only a single element.
+For 1,000,000 elements, the `single_radixsort` with only one work group takes 18.973ms.
+Setting `NUM_BLOCKS_PER_WORKGROUP=1` takes 30.04ms, since a lot of work groups (3907 = ceil(1,000,000/256/1)) have to be executed (high scheduling overhead).
+On the other hand, setting `NUM_BLOCKS_PER_WORKGROUP=4096` takes 20.91ms and uses only a single work group (1 = ceil(1,000,000/256/4096)).
+As we can see, setting `NUM_BLOCKS_PER_WORKGROUP=4096` is the same as using the `single_radixsort` (and requires approximately the same time).
+For a certain number of elements, we can find the best tradeoff between scheduling overhead and using too few threads.
+For 1,000,000 elements, this sweet spot is for my GPU `NUM_BLOCKS_PER_WORKGROUP=32` (using 123 work groups).
+I have done this optimization for the other tested number of elements (100, 1000, ...).
+You can see the results in the diagrams in the spoiler below.
+The optimized results are shown in the diagram above.
+
+![img 1000000](https://github.com/MircoWerner/VkRadixSort/blob/main/timings/radixsort_multi_1000000.png?raw=true)
+
+<details>
+  <summary>Timings for NUM_BLOCKS_PER_WORKGROUP for 100-100,000,000 elements</summary>
 
 ![img 100](https://github.com/MircoWerner/VkRadixSort/blob/main/timings/radixsort_multi_100.png?raw=true)
 
@@ -257,3 +277,5 @@ Tests performed on NVIDIA GeForce RTX 3070 8GB and AMD Ryzen 5 2600 with 2x Cruc
 ![img 10000000](https://github.com/MircoWerner/VkRadixSort/blob/main/timings/radixsort_multi_10000000.png?raw=true)
 
 ![img 100000000](https://github.com/MircoWerner/VkRadixSort/blob/main/timings/radixsort_multi_100000000.png?raw=true)
+
+</details>
