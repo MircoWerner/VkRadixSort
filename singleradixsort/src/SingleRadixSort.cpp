@@ -41,15 +41,16 @@ namespace engine {
         releaseBuffers();
         m_pass->release();
 
-//        std::ofstream myfile;
-//        myfile.open("singleradixsort.csv", std::ios_base::app);
-//        myfile << NUM_ELEMENTS << " " << std::to_string(gpuSortTime) << " " << std::to_string(cpuSortTime) << std::endl;
+        //        std::ofstream myfile;
+        //        myfile.open("singleradixsort.csv", std::ios_base::app);
+        //        myfile << NUM_ELEMENTS << " " << std::to_string(gpuSortTime) << " " << std::to_string(cpuSortTime) << std::endl;
     }
 
     void SingleRadixSort::prepareBuffers() {
         generateRandomNumbers(m_elementsIn, NUM_ELEMENTS);
         auto settings0 = Buffer::BufferSettings{.m_sizeBytes = NUM_ELEMENTS_BYTES, .m_bufferUsages = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, .m_memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, .m_name = "radixSort.elementBuffer0"};
         m_buffers[INPUT_BUFFER_INDEX] = Buffer::fillDeviceWithStagingBuffer(m_gpuContext, settings0, m_elementsIn.data());
+//        printBuffer("elements_in", m_elementsIn, NUM_ELEMENTS);
 
         std::vector<uint32_t> zeros;
         generateZeros(zeros, NUM_ELEMENTS);
@@ -70,13 +71,13 @@ namespace engine {
             if (i > 0 && i % 16 == 0) {
                 std::cout << std::endl;
             }
-            std::cout << std::setfill('0') << std::setw(9) << buffer[i] << " ";
+            std::cout << std::setfill(' ') << std::setw(9) << buffer[i] << " ";
         }
         std::cout << std::endl;
     }
 
     void SingleRadixSort::releaseBuffers() {
-        for (const auto &buffer : m_buffers) {
+        for (const auto &buffer: m_buffers) {
             buffer->release();
         }
     }
@@ -118,4 +119,4 @@ namespace engine {
         std::cout << PRINT_PREFIX << "Test passed." << std::endl;
         return true;
     }
-}
+} // namespace engine

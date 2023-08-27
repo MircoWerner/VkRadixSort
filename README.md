@@ -6,7 +6,7 @@ The implementation is based on Intel's Embree sorting kernel:
 
 - https://github.com/embree/embree/blob/v4.0.0-ploc/kernels/rthwif/builder/gpu/sort.h
 
-Tested on Linux with NVIDIA RTX 3070 GPU.
+Tested on Linux with NVIDIA RTX 3070 GPU and on Linux with AMD Radeon RX Vega 7 GPU.
 
 ## (IMPORTANT) Versions: Single vs. Multi Radix Sort
 
@@ -21,6 +21,9 @@ yields higher performance for larger number of elements.
 | + yields good performance for fewer elements (<10k) | + yields good performance even for a large number of elements |
 
 For detailed information on integrating the shaders and for timings see below.
+
+## (IMPORTANT) NVIDIA vs. AMD
+The shaders are configured for NVIDIA GPUs. If you are using an AMD GPU, set `SUBGROUP_SIZE=64` in `single_radixsort.comp` or `multi_radixsort.comp`.
 
 ## Table of Contents
 
