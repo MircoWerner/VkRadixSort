@@ -8,8 +8,8 @@
 namespace engine {
     class MultiRadixSort {
         // chainging this to SORT_64BIT requires changes in the two shaders (redefine data type of elements_* buffers to uint64_t)
-#define SORT_32BIT
-        // #define SORT_64_BIT
+        // #define SORT_32BIT
+#define SORT_64_BIT
 
 #ifdef SORT_32BIT
 #define SORT_TYPE uint32_t

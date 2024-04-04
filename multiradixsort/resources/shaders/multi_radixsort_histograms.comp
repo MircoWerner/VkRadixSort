@@ -4,6 +4,7 @@
 */
 #version 460
 #extension GL_GOOGLE_include_directive: enable
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: require
 
 #define WORKGROUP_SIZE 256 // assert WORKGROUP_SIZE >= RADIX_SORT_BINS
 #define RADIX_SORT_BINS 256
@@ -18,7 +19,7 @@ layout (push_constant, std430) uniform PushConstants {
 };
 
 layout (std430, set = 0, binding = 0) buffer elements_in {
-    uint g_elements_in[];
+    uint64_t g_elements_in[];
 };
 
 layout (std430, set = 0, binding = 1) buffer histograms {

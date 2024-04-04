@@ -7,6 +7,7 @@
 #extension GL_KHR_shader_subgroup_basic: enable
 #extension GL_KHR_shader_subgroup_arithmetic: enable
 #extension GL_KHR_shader_subgroup_ballot: enable
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: require
 
 #define WORKGROUP_SIZE 256// assert WORKGROUP_SIZE >= RADIX_SORT_BINS
 #define RADIX_SORT_BINS 256
@@ -22,11 +23,11 @@ layout (push_constant, std430) uniform PushConstants {
 };
 
 layout (std430, set = 1, binding = 0) buffer elements_in {
-    uint g_elements_in[];
+    uint64_t g_elements_in[];
 };
 
 layout (std430, set = 1, binding = 1) buffer elements_out {
-    uint g_elements_out[];
+    uint64_t g_elements_out[];
 };
 
 layout (std430, set = 1, binding = 2) buffer histograms {
@@ -91,7 +92,7 @@ void main() {
         }
         barrier();
 
-        uint element_in = 0;
+        uint64_t element_in = 0;
         uint binID = 0;
         uint binOffset = 0;
         if (elementId < g_num_elements) {

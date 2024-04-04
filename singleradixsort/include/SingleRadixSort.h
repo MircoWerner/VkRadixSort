@@ -8,8 +8,8 @@
 namespace engine {
     class SingleRadixSort {
         // chainging this to SORT_64BIT requires changes in the shader (redefine data type of elements_* buffers to uint64_t and set ITERATIONS to 8)
-#define SORT_32BIT
-        // #define SORT_64_BIT
+        // #define SORT_32BIT
+#define SORT_64_BIT
 
 #ifdef SORT_32BIT
 #define SORT_TYPE uint32_t
