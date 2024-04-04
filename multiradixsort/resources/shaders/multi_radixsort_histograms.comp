@@ -43,7 +43,7 @@ void main() {
         uint elementId = wID * g_num_blocks_per_workgroup * WORKGROUP_SIZE + index * WORKGROUP_SIZE + lID;
         if (elementId < g_num_elements) {
             // determine the bin
-            const uint bin = (g_elements_in[elementId] >> g_shift) & (RADIX_SORT_BINS - 1);
+            const uint bin = uint(g_elements_in[elementId] >> g_shift) & uint(RADIX_SORT_BINS - 1);
             // increment the histogram
             atomicAdd(histogram[bin], 1U);
         }

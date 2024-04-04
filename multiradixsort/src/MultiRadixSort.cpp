@@ -48,7 +48,11 @@ namespace engine {
         // execute pass
         std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
         VkSemaphore awaitBeforeExecution = VK_NULL_HANDLE;
+#ifdef SORT_32BIT
         const uint32_t NUM_ITERATIONS = 4;
+#else
+        const uint32_t NUM_ITERATIONS = 8;
+#endif
         for (uint32_t i = 0; i < NUM_ITERATIONS; i++) {
             m_pass->m_pushConstantsHistogram.g_shift = 8 * i;
             m_pass->m_pushConstants.g_shift = 8 * i;
@@ -82,7 +86,7 @@ namespace engine {
         auto settings0 = Buffer::BufferSettings{.m_sizeBytes = NUM_ELEMENTS_BYTES, .m_bufferUsages = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, .m_memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, .m_name = "radixSort.elementBuffer0"};
         m_buffers[0] = Buffer::fillDeviceWithStagingBuffer(m_gpuContext, settings0, m_elementsIn.data());
 
-        std::vector<uint32_t> zeros;
+        std::vector<SORT_TYPE> zeros;
         generateZeros(zeros, NUM_ELEMENTS);
         auto settings1 = Buffer::BufferSettings{.m_sizeBytes = NUM_ELEMENTS_BYTES, .m_bufferUsages = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, .m_memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, .m_name = "radixSort.elementBuffer1"};
         m_buffers[1] = Buffer::fillDeviceWithStagingBuffer(m_gpuContext, settings1, zeros.data());
@@ -90,14 +94,14 @@ namespace engine {
         m_buffers[2] = Buffer::fillDeviceWithStagingBuffer(m_gpuContext, settings2, zeros.data());
     }
 
-    void MultiRadixSort::verify(std::vector<uint32_t> &reference) {
-        std::vector<uint32_t> data(NUM_ELEMENTS);
+    void MultiRadixSort::verify(std::vector<SORT_TYPE> &reference) {
+        std::vector<SORT_TYPE> data(NUM_ELEMENTS);
         m_buffers[0]->downloadWithStagingBuffer(data.data());
         //            printBuffer("elements_out", data, NUM_ELEMENTS);
         testSort(reference, data);
     }
 
-    void MultiRadixSort::printBuffer(const std::string &label, std::vector<uint32_t> &buffer, uint32_t numElements) {
+    void MultiRadixSort::printBuffer(const std::string &label, std::vector<SORT_TYPE> &buffer, uint32_t numElements) {
         std::cout << label << ":" << std::endl;
         for (uint32_t i = 0; i < numElements; i++) {
             if (i > 0 && i % 16 == 0) {
@@ -114,30 +118,34 @@ namespace engine {
         }
     }
 
-    void MultiRadixSort::generateRandomNumbers(std::vector<uint32_t> &buffer, uint32_t numElements) {
+    void MultiRadixSort::generateRandomNumbers(std::vector<SORT_TYPE> &buffer, uint32_t numElements) {
         // https://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution
         std::random_device rd;
         std::mt19937 gen(rd());
-        std::uniform_int_distribution<> distrib(0, 0x0FFFFFFF);
+#ifdef SORT_32BIT
+        std::uniform_int_distribution<uint32_t> distrib(0, 0x0FFFFFFF);
+#else
+        std::uniform_int_distribution<uint64_t> distrib(0, 0x0FFFFFFFFFFF);
+#endif
         for (int i = 0; i < numElements; i++) {
             buffer.push_back(distrib(gen));
         }
     }
 
-    void MultiRadixSort::generateZeros(std::vector<uint32_t> &buffer, uint32_t numElements) {
+    void MultiRadixSort::generateZeros(std::vector<SORT_TYPE> &buffer, uint32_t numElements) {
         for (int i = 0; i < numElements; i++) {
             buffer.push_back(0);
         }
     }
 
-    double MultiRadixSort::sort(std::vector<uint32_t> &buffer) {
+    double MultiRadixSort::sort(std::vector<SORT_TYPE> &buffer) {
         std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
         std::sort(buffer.begin(), buffer.end());
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         return (static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()) * std::pow(10, -3));
     }
 
-    bool MultiRadixSort::testSort(std::vector<uint32_t> &reference, std::vector<uint32_t> &outBuffer) {
+    bool MultiRadixSort::testSort(std::vector<SORT_TYPE> &reference, std::vector<SORT_TYPE> &outBuffer) {
         if (reference.size() != outBuffer.size()) {
             std::cerr << PRINT_PREFIX << "reference.size() != outBuffer.size()" << std::endl;
             throw std::runtime_error("TEST FAILED.");

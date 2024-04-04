@@ -11,7 +11,6 @@
 #define RADIX_SORT_BINS 256
 #define SUBGROUP_SIZE 32// 32 NVIDIA; 64 AMD
 
-#define BITS 32// sorting uint32_t
 #define ITERATIONS 4// 4 iterations, sorting 8 bits per iteration
 
 layout (local_size_x = WORKGROUP_SIZE) in;
@@ -34,7 +33,7 @@ shared uint[RADIX_SORT_BINS] local_offsets;// local exclusive scan (prefix sum) 
 shared uint[RADIX_SORT_BINS] global_offsets;// global exclusive scan (prefix sum)
 
 struct BinFlags {
-    uint flags[WORKGROUP_SIZE / BITS];
+    uint flags[WORKGROUP_SIZE / 32];
 };
 shared BinFlags[RADIX_SORT_BINS] bin_flags;
 
@@ -56,7 +55,7 @@ void main() {
 
         for (uint ID = lID; ID < g_num_elements; ID += WORKGROUP_SIZE) {
             // determine the bin
-            const uint bin = (ELEMENT_IN(ID, iteration) >> shift) & (RADIX_SORT_BINS - 1);
+            const uint bin = uint(ELEMENT_IN(ID, iteration) >> shift) & uint(RADIX_SORT_BINS - 1);
             // increment the histogram
             atomicAdd(histogram[bin], 1U);
         }
@@ -86,8 +85,8 @@ void main() {
         barrier();
 
         //     ==== scatter keys according to global offsets =====
-        const uint flags_bin = lID / BITS;
-        const uint flags_bit = 1 << (lID % BITS);
+        const uint flags_bin = lID / 32;
+        const uint flags_bit = 1 << (lID % 32);
 
         for (uint blockID = 0; blockID < g_num_elements; blockID += WORKGROUP_SIZE) {
             barrier();
@@ -96,7 +95,7 @@ void main() {
 
             // initialize bin flags
             if (lID < RADIX_SORT_BINS) {
-                for (int i = 0; i < WORKGROUP_SIZE / BITS; i++) {
+                for (int i = 0; i < WORKGROUP_SIZE / 32; i++) {
                     bin_flags[lID].flags[i] = 0U;// init all bin flags to 0
                 }
             }
@@ -107,7 +106,7 @@ void main() {
             uint binOffset = 0;
             if (ID < g_num_elements) {
                 element_in = ELEMENT_IN(ID, iteration);
-                binID = (element_in >> shift) & uint(RADIX_SORT_BINS - 1);
+                binID = uint((element_in >> shift)) & uint(RADIX_SORT_BINS - 1);
                 // offset for group
                 binOffset = global_offsets[binID];
                 // add bit to flag
@@ -119,7 +118,7 @@ void main() {
                 // calculate output index of element
                 uint prefix = 0;
                 uint count = 0;
-                for (uint i = 0; i < WORKGROUP_SIZE / BITS; i++) {
+                for (uint i = 0; i < WORKGROUP_SIZE / 32; i++) {
                     const uint bits = bin_flags[binID].flags[i];
                     const uint full_count = bitCount(bits);
                     const uint partial_count = bitCount(bits & (flags_bit - 1));
