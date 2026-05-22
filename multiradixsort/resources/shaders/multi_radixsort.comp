@@ -8,11 +8,16 @@
 #extension GL_KHR_shader_subgroup_arithmetic: enable
 #extension GL_KHR_shader_subgroup_ballot: enable
 
-#define WORKGROUP_SIZE 256// assert WORKGROUP_SIZE >= RADIX_SORT_BINS
-#define RADIX_SORT_BINS 256
-#define SUBGROUP_SIZE 32// 32 NVIDIA; 64 AMD
-
-layout (local_size_x = WORKGROUP_SIZE) in;
+// constraints
+// 1. WORKGROUP_SIZE must be a multiple of 32
+// 2. WORKGROUP_SIZE >= RADIX_SORT_BINS
+// 3. RADIX_SORT_BINS >= SUBGROUP_SIZE
+// 4. SUBGROUP_SIZE must match the vendor specific gl_SubgroupSize (e.g., 32 on NVIDIA), you can query this: https://docs.vulkan.org/refpages/latest/refpages/source/VkPhysicalDeviceSubgroupProperties.html
+// Adjusting the RADIX_SORT_BINS requires updating the scheduling of the passes on the host side!
+layout (local_size_x_id = 0, local_size_x = 256) in; // 256 is the default value, you can update specialization constant 0 from host side
+#define WORKGROUP_SIZE gl_WorkGroupSize.x
+layout (constant_id = 1) const uint RADIX_SORT_BINS = 256; // 256 is the default value, you can update specialization constant 1 from host side
+layout (constant_id = 2) const uint SUBGROUP_SIZE = 32; // 32 is the default value (NVIDIA only!), you can update specialization constant 2 from host side
 
 layout (push_constant, std430) uniform PushConstants {
     uint g_num_elements;
@@ -43,50 +48,54 @@ struct BinFlags {
 shared BinFlags[RADIX_SORT_BINS] bin_flags;
 
 void main() {
-    uint gID = gl_GlobalInvocationID.x;
-    uint lID = gl_LocalInvocationID.x;
-    uint wID = gl_WorkGroupID.x;
-    uint sID = gl_SubgroupID;
-    uint lsID = gl_SubgroupInvocationID;
+    // === global offsets (prefix sum) ===
 
     uint local_histogram = 0;
-    uint prefix_sum = 0;
     uint histogram_count = 0;
-
-    if (lID < RADIX_SORT_BINS) {
-        uint count = 0;
+    if (gl_LocalInvocationID.x < RADIX_SORT_BINS) {
         for (uint j = 0; j < g_num_workgroups; j++) {
-            const uint t = g_histograms[RADIX_SORT_BINS * j + lID];
-            local_histogram = (j == wID) ? count : local_histogram;
-            count += t;
-        }
-        histogram_count = count;
-        const uint sum = subgroupAdd(histogram_count);
-        prefix_sum = subgroupExclusiveAdd(histogram_count);
-        if (subgroupElect()) {
-            // one thread inside the warp/subgroup enters this section
-            sums[sID] = sum;
+            // read histogram counts of all workgroups for our bin (gl_LocalInvocationID.x)
+            const uint t = g_histograms[RADIX_SORT_BINS * j + gl_LocalInvocationID.x];
+            local_histogram = (j == gl_WorkGroupID.x) ? histogram_count : local_histogram;
+            // sum them up to get the global histogram count for our bin
+            histogram_count += t;
         }
     }
+
+    const uint sum = subgroupAdd(histogram_count);
+    const uint prefix_sum = subgroupExclusiveAdd(histogram_count);
+    if (subgroupElect()) {
+        // only the elected thread of a subgroup writes to the array
+        if (gl_SubgroupID < (RADIX_SORT_BINS / SUBGROUP_SIZE)) {
+            // check if the subgroup ID is within the sums array bounds
+            sums[gl_SubgroupID] = sum;
+        }
+    }
+
     barrier();
 
-    if (lID < RADIX_SORT_BINS) {
-        const uint sums_prefix_sum = subgroupBroadcast(subgroupExclusiveAdd(sums[lsID]), sID);
-        const uint global_histogram = sums_prefix_sum + prefix_sum;
-        global_offsets[lID] = global_histogram + local_histogram;
+    if (gl_LocalInvocationID.x < RADIX_SORT_BINS) {
+        // calculate the prefix sum of the subgroup totals using a simple loop
+        // gl_SubgroupID is our current subgroup ID, sum the totals from previous subgroups
+        uint sums_prefix_sum = 0;
+        for (uint i = 0; i < gl_SubgroupID; i++) {
+            sums_prefix_sum += sums[i];
+        }
+        global_offsets[gl_LocalInvocationID.x] = sums_prefix_sum + prefix_sum + local_histogram;
     }
 
-    //     ==== scatter keys according to global offsets =====
-    const uint flags_bin = lID / 32;
-    const uint flags_bit = 1 << (lID % 32);
+    // === scatter keys according to global offsets ===
+
+    const uint flags_bin = gl_LocalInvocationID.x / 32;
+    const uint flags_bit = 1 << (gl_LocalInvocationID.x % 32);
 
     for (uint index = 0; index < g_num_blocks_per_workgroup; index++) {
-        uint elementId = wID * g_num_blocks_per_workgroup * WORKGROUP_SIZE + index * WORKGROUP_SIZE + lID;
+        uint elementId = gl_WorkGroupID.x * g_num_blocks_per_workgroup * WORKGROUP_SIZE + index * WORKGROUP_SIZE + gl_LocalInvocationID.x;
 
         // initialize bin flags
-        if (lID < RADIX_SORT_BINS) {
+        if (gl_LocalInvocationID.x < RADIX_SORT_BINS) {
             for (int i = 0; i < WORKGROUP_SIZE / 32; i++) {
-                bin_flags[lID].flags[i] = 0U;// init all bin flags to 0
+                bin_flags[gl_LocalInvocationID.x].flags[i] = 0U;// init all bin flags to 0
             }
         }
         barrier();
