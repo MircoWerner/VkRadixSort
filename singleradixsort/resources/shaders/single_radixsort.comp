@@ -12,12 +12,12 @@
 // 2. WORKGROUP_SIZE >= RADIX_SORT_BINS
 // 3. RADIX_SORT_BINS >= SUBGROUP_SIZE
 // 4. SUBGROUP_SIZE must match the vendor specific gl_SubgroupSize (e.g., 32 on NVIDIA), you can query this: https://docs.vulkan.org/refpages/latest/refpages/source/VkPhysicalDeviceSubgroupProperties.html
-// Adjusting the RADIX_SORT_BINS requires updating the scheduling of the passes on the host gl_SubgroupIDe!
-layout (local_size_x_id = 0, local_size_x = 256) in; // 256 is the default value, you can update specialization constant 0 from host gl_SubgroupIDe
+// Adjusting the RADIX_SORT_BINS requires updating the scheduling of the passes on the host side!
+layout (local_size_x_id = 0, local_size_x = 256) in; // 256 is the default value, you can update specialization constant 0 from host side
 #define WORKGROUP_SIZE gl_WorkGroupSize.x
-layout (constant_id = 1) const uint RADIX_SORT_BINS = 256; // 256 is the default value, you can update specialization constant 1 from host gl_SubgroupIDe
-layout (constant_id = 2) const uint SUBGROUP_SIZE = 32; // 32 is the default value (NVIDIA only!), you can update specialization constant 2 from host gl_SubgroupIDe
-layout (constant_id = 3) const uint ITERATIONS = 4; // 4 is the default value, you can update specialization constant 3 from host gl_SubgroupIDe
+layout (constant_id = 1) const uint RADIX_SORT_BINS = 256; // 256 is the default value, you can update specialization constant 1 from host side
+layout (constant_id = 2) const uint SUBGROUP_SIZE = 32; // 32 is the default value (NVIDIA only!), you can update specialization constant 2 from host side
+layout (constant_id = 3) const uint ITERATIONS = 4; // 4 is the default value, you can update specialization constant 3 from host side
 
 layout (push_constant, std430) uniform PushConstants {
     uint g_num_elements;
@@ -33,7 +33,7 @@ layout (std430, set = 0, binding = 1) buffer elements_out {
 
 shared uint[RADIX_SORT_BINS] histogram;
 shared uint[RADIX_SORT_BINS / SUBGROUP_SIZE] sums;// subgroup reductions
-shared uint[RADIX_SORT_BINS] local_offsets;// local exclusive scan (prefix sum) (ingl_SubgroupIDe subgroups)
+shared uint[RADIX_SORT_BINS] local_offsets;// local exclusive scan (prefix sum) (inside subgroups)
 shared uint[RADIX_SORT_BINS] global_offsets;// global exclusive scan (prefix sum)
 
 struct BinFlags {
