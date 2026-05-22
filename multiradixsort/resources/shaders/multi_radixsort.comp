@@ -17,7 +17,7 @@
 layout (local_size_x_id = 0, local_size_x = 256) in; // 256 is the default value, you can update specialization constant 0 from host side
 #define WORKGROUP_SIZE gl_WorkGroupSize.x
 layout (constant_id = 1) const uint RADIX_SORT_BINS = 256; // 256 is the default value, you can update specialization constant 1 from host side
-layout (constant_id = 2) const uint SUBGROUP_SIZE = 8; // 32 is the default value (NVIDIA only!), you can update specialization constant 2 from host side
+layout (constant_id = 2) const uint SUBGROUP_SIZE = 32; // 32 is the default value (NVIDIA only!), you can update specialization constant 2 from host side
 
 layout (push_constant, std430) uniform PushConstants {
     uint g_num_elements;
