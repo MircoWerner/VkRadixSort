@@ -7,7 +7,7 @@
 
 namespace engine {
     class MultiRadixSort {
-        // chainging this to SORT_64BIT requires changes in the two shaders (redefine data type of elements_* buffers to uint64_t)
+        // chainging this to SORT_64BIT requires changes in the two shaders (redefine data type of elements_* buffers to uint64_t) and enabling #extension GL_EXT_shader_explicit_arithmetic_types_int64: require
 #define SORT_32BIT
         // #define SORT_64_BIT
 
@@ -25,7 +25,7 @@ namespace engine {
 
         std::shared_ptr<MultiRadixSortPass> m_pass;
 
-        const uint32_t RADIX_SORT_BINS = 256;
+        const uint32_t RADIX_SORT_BINS = 256; // the GPU scheduling on the host is hardcoded for 256; to change this value, you need to adjust the host code
         const uint32_t NUM_ELEMENTS = 1000000;
 
         const uint32_t NUM_ELEMENTS_BYTES = NUM_ELEMENTS * sizeof(SORT_TYPE);
